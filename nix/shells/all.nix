@@ -15,9 +15,11 @@ let
 
   # Common utility tools
   commonTools = with pkgs; [
-    jq       # JSON processing
-    yq-go    # YAML processing
-    gnuplot  # Graph generation
+    jq           # JSON processing
+    yq-go        # YAML processing
+    gnuplot      # Graph generation
+    direnv       # Auto-activate environment
+    nix-direnv   # Fast flake caching for direnv
   ];
 
 in
@@ -30,8 +32,11 @@ in
     echo "======================================"
     ${allShellHooks}
     echo "======================================"
-    echo "Common tools: jq, yq, gnuplot"
+    echo "Common tools: jq, yq, gnuplot, direnv"
     echo "======================================"
+
+    # Enable nix-direnv for faster subsequent loads
+    eval "$(direnv hook bash)"
   '';
 
   # Flag indicating all environments are active

@@ -11,13 +11,13 @@
       let
         pkgs = import nixpkgs { inherit system; };
 
-        # Load benchmark configuration from bench.json
+        # Load benchmark configuration from leb.config.json
         # This is the single source of truth for runtime versions
-        benchConfig = builtins.fromJSON (builtins.readFile ./bench.json);
+        benchConfig = builtins.fromJSON (builtins.readFile ./leb.config.json);
         runtimes = benchConfig.runtimes;
 
         # Version string to Nix package name mapping
-        # Maps version strings from bench.json to nixpkgs attribute names
+        # Maps version strings from leb.config.json to nixpkgs attribute names
         versionToPackage = {
           php = {
             "8.3" = "php83";
