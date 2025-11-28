@@ -175,9 +175,80 @@ user:
 
 ### 方針
 
-- 全実装がサポートする Shopify 公式機能のみ使用
-- `include` タグ使用（`render` は kalimatas 非対応）
+- Shopify 公式機能を使用（`render`、`include` 両方使用可）
+- kalimatas 非対応機能はパッチで対応（後述）
 - 独自機能はベンチ対象外
+
+### パッチ管理
+
+kalimatas は一部の Shopify 機能（`render` タグ等）に非対応のため、差分パッチで対応する。
+
+#### 構成
+
+パッチファイルはテンプレートと同じディレクトリに配置（co-location）:
+
+```
+templates/
+├── ecommerce/
+│   ├── product.liquid                    # 基準テンプレート（Shopify/keepsuit 用）
+│   ├── product.liquid.kalimatas.patch    # kalimatas 向けパッチ
+│   ├── collection.liquid
+│   └── collection.liquid.kalimatas.patch
+└── ...
+```
+
+#### パッチファイル形式
+
+unified diff 形式（`git diff` 互換）:
+
+```diff
+--- a/templates/ecommerce/product.liquid
++++ b/templates/ecommerce/product.liquid
+@@ -10,7 +10,7 @@
+   </select>
+ {% endif %}
+
+-{% render 'product-reviews', product: product %}
++{% include 'product-reviews' %}
+
+ <div class="images">
+```
+
+#### パッチ適用スクリプト
+
+```bash
+#!/bin/bash
+# scripts/apply-patches.sh
+# kalimatas 向けにパッチを適用したテンプレートを生成
+set -euo pipefail
+
+OUTPUT_DIR="templates-kalimatas"
+rm -rf "$OUTPUT_DIR"
+cp -r templates "$OUTPUT_DIR"
+
+find templates -name "*.kalimatas.patch" | while read patch; do
+    target="${patch%.kalimatas.patch}"
+    target_out="${OUTPUT_DIR}${target#templates}"
+    patch -p1 < "$patch" -o "$target_out" "$target"
+done
+
+echo "Patched templates generated in $OUTPUT_DIR/"
+```
+
+#### 主な変換パターン
+
+| 元（Shopify/keepsuit） | 変換後（kalimatas） |
+|----------------------|-------------------|
+| `{% render 'partial' %}` | `{% include 'partial' %}` |
+| `{% render 'x', var: val %}` | `{% include 'x' %}` + 変数スコープ調整 |
+| `{% echo var %}` | `{{ var }}` |
+| `{% liquid ... %}` | 通常の Liquid タグに展開 |
+
+#### 成果物
+
+- templates/**/*.kalimatas.patch（必要なテンプレートのみ）
+- scripts/apply-patches.sh
+- templates-kalimatas/（生成物、.gitignore 対象）
 
 ### カテゴリ別テンプレート
 
