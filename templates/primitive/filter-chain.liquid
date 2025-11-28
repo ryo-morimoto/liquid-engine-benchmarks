@@ -1,0 +1,5 @@
+{{ product.title | upcase | truncate: 20 }}
+{{ product.description | strip_html | truncate: 100 }}
+{{ product.price | divided_by: 100 | round: 2 }}
+{{ user.name | downcase | split: " " | first }}
+{{ user.email | split: "@" | last | upcase }}

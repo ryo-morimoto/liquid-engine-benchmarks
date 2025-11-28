@@ -1,0 +1,37 @@
+<div class="collection">
+  <header class="collection-header">
+    <h1>{{ collection.title }}</h1>
+    <p>{{ collection.description }}</p>
+    <p class="product-count">{{ collection.products.size }} products</p>
+  </header>
+
+  <div class="product-grid">
+    {% for product in collection.products %}
+      <article class="product-card">
+        {% if product.images.size > 0 %}
+          <img src="{{ product.images.first.src }}" alt="{{ product.images.first.alt }}" class="product-thumbnail">
+        {% endif %}
+
+        <h2 class="product-title">{{ product.title }}</h2>
+        <p class="product-price">${{ product.price | divided_by: 100 }}</p>
+
+        {% if product.variants.size > 0 %}
+          {% assign available_count = 0 %}
+          {% for variant in product.variants %}
+            {% if variant.available %}
+              {% assign available_count = available_count | plus: 1 %}
+            {% endif %}
+          {% endfor %}
+
+          {% if available_count == 0 %}
+            <span class="badge sold-out">Sold Out</span>
+          {% elsif available_count < product.variants.size %}
+            <span class="badge limited">Limited Stock</span>
+          {% endif %}
+        {% endif %}
+
+        <a href="/products/{{ product.id }}" class="view-product">View Details</a>
+      </article>
+    {% endfor %}
+  </div>
+</div>

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Order Confirmation</title>
+</head>
+<body>
+  <div class="email-container">
+    <header class="email-header">
+      <h1>Thank you for your order!</h1>
+      <p>Order #{{ order.id }}</p>
+    </header>
+
+    <section class="greeting">
+      <p>Hi {{ user.name }},</p>
+      <p>We've received your order and it's being processed. Here's a summary:</p>
+    </section>
+
+    <section class="order-details">
+      <h2>Order Items</h2>
+      <table class="items-table">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Quantity</th>
+            <th>Price</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in cart.items %}
+            <tr>
+              <td>
+                {{ item.product.title }}
+                {% if item.variant.title %}
+                  <br><small>{{ item.variant.title }}</small>
+                {% endif %}
+              </td>
+              <td>{{ item.quantity }}</td>
+              <td>${{ item.price | divided_by: 100 }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="2">Subtotal</td>
+            <td>${{ cart.total_price | divided_by: 100 }}</td>
+          </tr>
+          <tr>
+            <td colspan="2">Shipping</td>
+            {% if cart.total_price > 10000 %}
+              <td>FREE</td>
+            {% else %}
+              <td>$9.99</td>
+            {% endif %}
+          </tr>
+          <tr class="total">
+            <td colspan="2"><strong>Total</strong></td>
+            {% if cart.total_price > 10000 %}
+              <td><strong>${{ cart.total_price | divided_by: 100 }}</strong></td>
+            {% else %}
+              {% assign order_total = cart.total_price | plus: 999 %}
+              <td><strong>${{ order_total | divided_by: 100 }}</strong></td>
+            {% endif %}
+          </tr>
+        </tfoot>
+      </table>
+    </section>
+
+    <section class="shipping-address">
+      <h2>Shipping Address</h2>
+      <address>
+        {{ user.name }}<br>
+        {{ user.street }}<br>
+        {{ user.city }}, {{ user.zip }}<br>
+        {{ user.country }}
+      </address>
+    </section>
+
+    <section class="next-steps">
+      <p>You'll receive another email when your order ships.</p>
+      <a href="/orders/{{ order.id }}" class="track-button">Track Your Order</a>
+    </section>
+
+    <footer class="email-footer">
+      <p>Questions? Contact us at support@store.example.com</p>
+      <p>&copy; 2024 Online Store</p>
+    </footer>
+  </div>
+</body>
+</html>

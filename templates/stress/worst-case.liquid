@@ -1,0 +1,202 @@
+{% comment %}
+Stress test: Worst case scenario
+Combines all stress factors: deep nesting, many conditionals, large loops, filter chains
+{% endcomment %}
+
+<div class="worst-case">
+  {% comment %} Deep nesting with conditionals {% endcomment %}
+  {% for collection in collections %}
+    <section class="collection level-1" data-id="{{ collection.id }}">
+      <h2>{{ collection.title | upcase | truncate: 30 }}</h2>
+
+      {% if collection.products.size > 0 %}
+        <div class="products level-2">
+          {% for product in collection.products %}
+            {% assign price_tier = product.price | divided_by: 10000 %}
+
+            <article class="product level-3" data-price-tier="{{ price_tier }}">
+              <h3>{{ product.title | capitalize | truncate: 25 | append: "..." }}</h3>
+
+              {% if product.variants.size > 0 %}
+                <div class="variants level-4">
+                  {% for variant in product.variants %}
+                    {% if variant.available %}
+                      <div class="variant level-5 available">
+                        <span class="variant-title">
+                          {{ variant.title | downcase | capitalize | prepend: "Option: " }}
+                        </span>
+                        <span class="variant-price">
+                          {{ variant.price | divided_by: 100 | round: 2 | prepend: "$" }}
+                        </span>
+
+                        {% if product.images.size > 0 %}
+                          <div class="images level-6">
+                            {% for image in product.images %}
+                              <figure class="image level-7">
+                                <img src="{{ image.src | split: '/' | last | prepend: '/images/' }}"
+                                     alt="{{ image.alt | escape | truncate: 50 }}">
+
+                                {% if forloop.first %}
+                                  <div class="badge level-8">
+                                    {% if price_tier > 3 %}
+                                      <span class="premium level-9">Premium</span>
+                                    {% elsif price_tier > 1 %}
+                                      <span class="standard level-9">Standard</span>
+                                    {% else %}
+                                      <span class="budget level-9">Budget</span>
+                                    {% endif %}
+                                  </div>
+                                {% endif %}
+                              </figure>
+                            {% endfor %}
+                          </div>
+                        {% endif %}
+                      </div>
+                    {% else %}
+                      <div class="variant level-5 unavailable">
+                        <span class="sold-out">{{ variant.title }} - Sold Out</span>
+                      </div>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+              {% endif %}
+
+              <p class="description">
+                {{ product.description
+                  | strip_html
+                  | strip_newlines
+                  | truncate: 100
+                  | replace: ".", "..."
+                  | downcase
+                  | capitalize
+                  | prepend: "About: "
+                  | append: " [Read more]"
+                }}
+              </p>
+            </article>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </section>
+  {% endfor %}
+
+  {% comment %} Large loop with complex logic {% endcomment %}
+  <section class="all-products">
+    <h2>All Products ({{ products.size }})</h2>
+
+    {% assign grand_total = 0 %}
+    {% assign available_count = 0 %}
+    {% assign premium_count = 0 %}
+
+    <table class="product-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Product</th>
+          <th>Price</th>
+          <th>Variants</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for product in products %}
+          {% assign grand_total = grand_total | plus: product.price %}
+          {% assign tier = product.price | divided_by: 10000 %}
+
+          {% if tier > 3 %}
+            {% assign premium_count = premium_count | plus: 1 %}
+            {% assign row_class = "premium" %}
+          {% elsif tier > 1 %}
+            {% assign row_class = "standard" %}
+          {% else %}
+            {% assign row_class = "budget" %}
+          {% endif %}
+
+          {% assign has_available = false %}
+          {% for variant in product.variants %}
+            {% if variant.available %}
+              {% assign has_available = true %}
+              {% assign available_count = available_count | plus: 1 %}
+            {% endif %}
+          {% endfor %}
+
+          <tr class="{{ row_class }} {% if has_available %}in-stock{% else %}out-of-stock{% endif %}">
+            <td>{{ forloop.index }}</td>
+            <td>
+              {{ product.title
+                | truncate: 20
+                | escape
+              }}
+            </td>
+            <td>
+              {{ product.price
+                | divided_by: 100
+                | round: 2
+                | prepend: "$"
+              }}
+            </td>
+            <td>{{ product.variants.size }}</td>
+            <td>
+              {% if has_available %}
+                <span class="status available">Available</span>
+              {% else %}
+                <span class="status unavailable">Sold Out</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="2">Totals</td>
+          <td>${{ grand_total | divided_by: 100 | round: 2 }}</td>
+          <td>{{ available_count }} available</td>
+          <td>{{ premium_count }} premium</td>
+        </tr>
+      </tfoot>
+    </table>
+  </section>
+
+  {% comment %} Cart with filter chains {% endcomment %}
+  <section class="cart-summary">
+    <h2>Cart</h2>
+
+    {% assign cart_total = 0 %}
+    {% for item in cart.items %}
+      {% assign cart_total = cart_total | plus: item.price %}
+
+      <div class="cart-item">
+        <span class="item-product">
+          {{ item.product.title
+            | downcase
+            | capitalize
+            | truncate: 25
+            | prepend: "• "
+          }}
+        </span>
+        <span class="item-variant">
+          {{ item.variant.title | default: "Default" | upcase }}
+        </span>
+        <span class="item-qty">x{{ item.quantity }}</span>
+        <span class="item-price">
+          {{ item.price
+            | divided_by: 100
+            | round: 2
+            | prepend: "$"
+            | append: " USD"
+          }}
+        </span>
+      </div>
+    {% endfor %}
+
+    <div class="cart-total">
+      <strong>Total:</strong>
+      {{ cart_total
+        | divided_by: 100
+        | round: 2
+        | prepend: "$"
+        | append: " USD"
+      }}
+    </div>
+  </section>
+</div>

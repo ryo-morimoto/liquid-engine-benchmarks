@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Special Offers Just For You</title>
+</head>
+<body>
+  <div class="email-container">
+    <header class="email-header">
+      {% if user.name %}
+        <h1>{{ user.name | split: " " | first }}, check out these deals!</h1>
+      {% else %}
+        <h1>Exclusive Deals Just For You!</h1>
+      {% endif %}
+    </header>
+
+    <section class="hero">
+      {% if user.vip_status %}
+        <div class="vip-badge">VIP Member</div>
+        <p>As a VIP member, you get early access to our best deals!</p>
+      {% endif %}
+    </section>
+
+    <section class="recommendations">
+      <h2>Recommended For You</h2>
+
+      {% if recommended_products.size > 0 %}
+        <div class="product-grid">
+          {% for product in recommended_products %}
+            <div class="product-card">
+              {% if product.images.size > 0 %}
+                <img src="{{ product.images.first.src }}" alt="{{ product.images.first.alt }}">
+              {% endif %}
+              <h3>{{ product.title }}</h3>
+              <p class="price">
+                {% if product.sale_price %}
+                  <span class="original">${{ product.price | divided_by: 100 }}</span>
+                  <span class="sale">${{ product.sale_price | divided_by: 100 }}</span>
+                {% else %}
+                  ${{ product.price | divided_by: 100 }}
+                {% endif %}
+              </p>
+              <a href="/products/{{ product.id }}" class="shop-button">Shop Now</a>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="product-grid">
+          {% for product in products limit: 4 %}
+            <div class="product-card">
+              <h3>{{ product.title }}</h3>
+              <p class="price">${{ product.price | divided_by: 100 }}</p>
+              <a href="/products/{{ product.id }}" class="shop-button">Shop Now</a>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </section>
+
+    {% if promo_code %}
+      <section class="promo-code">
+        <h2>Your Exclusive Code</h2>
+        <div class="code-box">
+          <span class="code">{{ promo_code }}</span>
+          <p>Use this code at checkout for {{ discount_percent | default: 10 }}% off!</p>
+        </div>
+        {% if promo_expiry %}
+          <p class="expiry">Valid until {{ promo_expiry }}</p>
+        {% endif %}
+      </section>
+    {% endif %}
+
+    <section class="categories">
+      <h2>Shop by Category</h2>
+      <div class="category-links">
+        {% for collection in collections limit: 4 %}
+          <a href="/collections/{{ collection.id }}" class="category-link">{{ collection.title }}</a>
+        {% endfor %}
+      </div>
+    </section>
+
+    <footer class="email-footer">
+      <p>You're receiving this because you subscribed to our newsletter.</p>
+      <p><a href="/unsubscribe?email={{ user.email }}">Unsubscribe</a> | <a href="/preferences">Update Preferences</a></p>
+      <p>&copy; 2024 Online Store</p>
+    </footer>
+  </div>
+</body>
+</html>

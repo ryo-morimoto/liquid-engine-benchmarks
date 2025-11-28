@@ -1,0 +1,25 @@
+<div class="product-detail">
+  <h1>{{ product.title }}</h1>
+  <p class="price">${{ product.price | divided_by: 100 }}</p>
+  <p class="description">{{ product.description }}</p>
+
+  {% if product.variants.size > 1 %}
+    <select name="variant" class="variant-selector">
+      {% for variant in product.variants %}
+        <option value="{{ variant.id }}"
+          {% unless variant.available %}disabled{% endunless %}>
+          {{ variant.title }} - ${{ variant.price | divided_by: 100 }}
+          {% unless variant.available %}(Sold Out){% endunless %}
+        </option>
+      {% endfor %}
+    </select>
+  {% endif %}
+
+  <div class="images">
+    {% for image in product.images %}
+      <img src="{{ image.src }}" alt="{{ image.alt }}" class="product-image">
+    {% endfor %}
+  </div>
+
+  <button type="submit" class="add-to-cart">Add to Cart</button>
+</div>

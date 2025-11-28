@@ -1,0 +1,46 @@
+<aside class="tag-cloud">
+  <h2>Tags</h2>
+
+  {% comment %}
+  Count posts per tag to determine size
+  {% endcomment %}
+
+  <div class="tags">
+    {% for tag in tags %}
+      {% assign tag_count = 0 %}
+      {% for post in posts %}
+        {% for post_tag in post.tags %}
+          {% if post_tag == tag.name %}
+            {% assign tag_count = tag_count | plus: 1 %}
+          {% endif %}
+        {% endfor %}
+      {% endfor %}
+
+      {% if tag_count > 10 %}
+        {% assign size_class = "tag-xl" %}
+      {% elsif tag_count > 5 %}
+        {% assign size_class = "tag-lg" %}
+      {% elsif tag_count > 2 %}
+        {% assign size_class = "tag-md" %}
+      {% else %}
+        {% assign size_class = "tag-sm" %}
+      {% endif %}
+
+      <a href="/tags/{{ tag.name }}" class="tag {{ size_class }}" title="{{ tag_count }} posts">
+        {{ tag.name }}
+        <span class="count">({{ tag_count }})</span>
+      </a>
+    {% endfor %}
+  </div>
+
+  <section class="popular-tags">
+    <h3>Popular Tags</h3>
+    <ul>
+      {% for tag in tags limit: 10 %}
+        <li>
+          <a href="/tags/{{ tag.name }}">{{ tag.name }}</a>
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+</aside>

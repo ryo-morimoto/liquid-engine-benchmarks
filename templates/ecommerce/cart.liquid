@@ -1,0 +1,39 @@
+<div class="cart">
+  <h1>Shopping Cart</h1>
+
+  {% if cart.items.size > 0 %}
+    <table class="cart-items">
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>Variant</th>
+          <th>Quantity</th>
+          <th>Price</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in cart.items %}
+          <tr class="cart-item">
+            <td class="item-title">{{ item.product.title }}</td>
+            <td class="item-variant">{{ item.variant.title }}</td>
+            <td class="item-quantity">
+              <input type="number" value="{{ item.quantity }}" min="1" max="99">
+            </td>
+            <td class="item-price">${{ item.variant.price | divided_by: 100 }}</td>
+            <td class="item-total">${{ item.price | divided_by: 100 }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="cart-summary">
+      <p class="item-count">{{ cart.item_count }} items</p>
+      <p class="subtotal">Subtotal: ${{ cart.total_price | divided_by: 100 }}</p>
+      <a href="/checkout" class="checkout-button">Proceed to Checkout</a>
+    </div>
+  {% else %}
+    <p class="empty-cart">Your cart is empty.</p>
+    <a href="/collections" class="continue-shopping">Continue Shopping</a>
+  {% endif %}
+</div>

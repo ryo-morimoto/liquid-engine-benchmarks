@@ -1,0 +1,41 @@
+<article class="blog-post">
+  <header class="post-header">
+    <h1>{{ post.title }}</h1>
+    <div class="post-meta">
+      <span class="author">By {{ post.author }}</span>
+      <time datetime="{{ post.published_at }}">{{ post.published_at }}</time>
+    </div>
+    {% if post.tags.size > 0 %}
+      <ul class="post-tags">
+        {% for tag in post.tags %}
+          <li><a href="/tags/{{ tag }}" class="tag">{{ tag }}</a></li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </header>
+
+  <div class="post-content">
+    {{ post.content }}
+  </div>
+
+  <footer class="post-footer">
+    <div class="share-buttons">
+      <a href="#" class="share-twitter">Share on Twitter</a>
+      <a href="#" class="share-facebook">Share on Facebook</a>
+    </div>
+
+    {% if related_posts.size > 0 %}
+      <section class="related-posts">
+        <h3>Related Posts</h3>
+        <ul>
+          {% for related in related_posts %}
+            <li>
+              <a href="/posts/{{ related.id }}">{{ related.title }}</a>
+              <span class="date">{{ related.published_at }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      </section>
+    {% endif %}
+  </footer>
+</article>

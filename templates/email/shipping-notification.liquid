@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Your Order Has Shipped!</title>
+</head>
+<body>
+  <div class="email-container">
+    <header class="email-header">
+      <h1>Your order is on its way!</h1>
+    </header>
+
+    <section class="greeting">
+      <p>Hi {{ user.name | split: " " | first }},</p>
+      <p>Great news! Your order #{{ order.id }} has shipped.</p>
+    </section>
+
+    <section class="tracking-info">
+      <h2>Tracking Information</h2>
+      <p>
+        <strong>Carrier:</strong> {{ shipment.carrier | default: "Standard Shipping" }}<br>
+        <strong>Tracking Number:</strong> {{ shipment.tracking_number | default: "Available soon" }}
+      </p>
+      {% if shipment.tracking_url %}
+        <a href="{{ shipment.tracking_url }}" class="track-button">Track Your Package</a>
+      {% endif %}
+    </section>
+
+    <section class="delivery-estimate">
+      <h2>Estimated Delivery</h2>
+      {% if shipment.estimated_delivery %}
+        <p class="delivery-date">{{ shipment.estimated_delivery }}</p>
+      {% else %}
+        <p>3-5 business days</p>
+      {% endif %}
+    </section>
+
+    <section class="shipped-items">
+      <h2>What's in this shipment</h2>
+      <ul class="items-list">
+        {% for item in cart.items %}
+          <li>
+            <span class="item-name">{{ item.product.title }}</span>
+            {% if item.variant.title %}
+              <span class="item-variant">({{ item.variant.title }})</span>
+            {% endif %}
+            <span class="item-qty">x{{ item.quantity }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <section class="shipping-address">
+      <h2>Shipping To</h2>
+      <address>
+        {{ user.name }}<br>
+        {{ user.street }}<br>
+        {{ user.city }}, {{ user.zip }}<br>
+        {{ user.country }}
+      </address>
+    </section>
+
+    <footer class="email-footer">
+      <p>Need help? Reply to this email or visit our <a href="/help">Help Center</a>.</p>
+      <p>&copy; 2024 Online Store</p>
+    </footer>
+  </div>
+</body>
+</html>

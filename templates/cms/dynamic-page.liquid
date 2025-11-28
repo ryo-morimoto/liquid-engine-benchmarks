@@ -1,0 +1,97 @@
+<div class="dynamic-page">
+  <header class="page-header">
+    <h1>{{ page.title | default: "Untitled Page" }}</h1>
+    {% if page.subtitle %}
+      <p class="subtitle">{{ page.subtitle }}</p>
+    {% endif %}
+  </header>
+
+  <nav class="breadcrumb">
+    <a href="/">Home</a>
+    {% if page.parent %}
+      <span class="separator">/</span>
+      <a href="/pages/{{ page.parent.slug }}">{{ page.parent.title }}</a>
+    {% endif %}
+    <span class="separator">/</span>
+    <span class="current">{{ page.title }}</span>
+  </nav>
+
+  <article class="page-content">
+    {% for section in page.sections %}
+      <section class="content-section {{ section.type }}">
+        {% case section.type %}
+          {% when "hero" %}
+            <div class="hero-section">
+              {% if section.image %}
+                <img src="{{ section.image }}" alt="{{ section.title }}">
+              {% endif %}
+              <h2>{{ section.title }}</h2>
+              <p>{{ section.content }}</p>
+              {% if section.cta_url %}
+                <a href="{{ section.cta_url }}" class="cta-button">{{ section.cta_text | default: "Learn More" }}</a>
+              {% endif %}
+            </div>
+
+          {% when "text" %}
+            <div class="text-section">
+              {% if section.title %}
+                <h2>{{ section.title }}</h2>
+              {% endif %}
+              <div class="content">{{ section.content }}</div>
+            </div>
+
+          {% when "gallery" %}
+            <div class="gallery-section">
+              {% if section.title %}
+                <h2>{{ section.title }}</h2>
+              {% endif %}
+              <div class="gallery-grid">
+                {% for image in section.images %}
+                  <figure class="gallery-item">
+                    <img src="{{ image.src }}" alt="{{ image.alt }}">
+                    {% if image.caption %}
+                      <figcaption>{{ image.caption }}</figcaption>
+                    {% endif %}
+                  </figure>
+                {% endfor %}
+              </div>
+            </div>
+
+          {% when "features" %}
+            <div class="features-section">
+              {% if section.title %}
+                <h2>{{ section.title }}</h2>
+              {% endif %}
+              <div class="features-grid">
+                {% for feature in section.features %}
+                  <div class="feature-card">
+                    {% if feature.icon %}
+                      <span class="icon">{{ feature.icon }}</span>
+                    {% endif %}
+                    <h3>{{ feature.title }}</h3>
+                    <p>{{ feature.description }}</p>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+
+          {% else %}
+            <div class="generic-section">
+              {{ section.content }}
+            </div>
+        {% endcase %}
+      </section>
+    {% endfor %}
+  </article>
+
+  {% if page.related_pages.size > 0 %}
+    <aside class="related-pages">
+      <h3>Related Pages</h3>
+      <ul>
+        {% for related in page.related_pages %}
+          <li><a href="/pages/{{ related.slug }}">{{ related.title }}</a></li>
+        {% endfor %}
+      </ul>
+    </aside>
+  {% endif %}
+</div>

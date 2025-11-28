@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="{{ locale | default: 'en' }}">
+<head>
+  <meta charset="UTF-8">
+  <title>
+    {% case locale %}
+      {% when "ja" %}ご注文ありがとうございます
+      {% when "de" %}Vielen Dank für Ihre Bestellung
+      {% when "fr" %}Merci pour votre commande
+      {% when "es" %}Gracias por su pedido
+      {% else %}Thank you for your order
+    {% endcase %}
+  </title>
+</head>
+<body>
+  <div class="email-container">
+    <header class="email-header">
+      <h1>
+        {% case locale %}
+          {% when "ja" %}ご注文を承りました
+          {% when "de" %}Bestellung eingegangen
+          {% when "fr" %}Commande reçue
+          {% when "es" %}Pedido recibido
+          {% else %}Order Received
+        {% endcase %}
+      </h1>
+    </header>
+
+    <section class="greeting">
+      {% case locale %}
+        {% when "ja" %}
+          <p>{{ user.name }} 様</p>
+          <p>この度はご注文いただき、誠にありがとうございます。</p>
+        {% when "de" %}
+          <p>Hallo {{ user.name }},</p>
+          <p>Vielen Dank für Ihre Bestellung bei uns.</p>
+        {% when "fr" %}
+          <p>Bonjour {{ user.name }},</p>
+          <p>Merci d'avoir passé commande chez nous.</p>
+        {% when "es" %}
+          <p>Hola {{ user.name }},</p>
+          <p>Gracias por realizar su pedido con nosotros.</p>
+        {% else %}
+          <p>Hi {{ user.name }},</p>
+          <p>Thank you for your order with us.</p>
+      {% endcase %}
+    </section>
+
+    <section class="order-summary">
+      <h2>
+        {% case locale %}
+          {% when "ja" %}ご注文内容
+          {% when "de" %}Bestellübersicht
+          {% when "fr" %}Récapitulatif de la commande
+          {% when "es" %}Resumen del pedido
+          {% else %}Order Summary
+        {% endcase %}
+      </h2>
+
+      <table class="items-table">
+        <thead>
+          <tr>
+            <th>
+              {% case locale %}
+                {% when "ja" %}商品
+                {% when "de" %}Produkt
+                {% when "fr" %}Produit
+                {% when "es" %}Producto
+                {% else %}Product
+              {% endcase %}
+            </th>
+            <th>
+              {% case locale %}
+                {% when "ja" %}数量
+                {% when "de" %}Menge
+                {% when "fr" %}Quantité
+                {% when "es" %}Cantidad
+                {% else %}Qty
+              {% endcase %}
+            </th>
+            <th>
+              {% case locale %}
+                {% when "ja" %}価格
+                {% when "de" %}Preis
+                {% when "fr" %}Prix
+                {% when "es" %}Precio
+                {% else %}Price
+              {% endcase %}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in cart.items %}
+            <tr>
+              <td>{{ item.product.title }}</td>
+              <td>{{ item.quantity }}</td>
+              <td>
+                {% case locale %}
+                  {% when "ja" %}¥{{ item.price }}
+                  {% when "de" %}€{{ item.price | divided_by: 100 }}
+                  {% when "fr" %}€{{ item.price | divided_by: 100 }}
+                  {% when "es" %}€{{ item.price | divided_by: 100 }}
+                  {% else %}${{ item.price | divided_by: 100 }}
+                {% endcase %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="shipping-info">
+      <h2>
+        {% case locale %}
+          {% when "ja" %}配送先
+          {% when "de" %}Lieferadresse
+          {% when "fr" %}Adresse de livraison
+          {% when "es" %}Dirección de envío
+          {% else %}Shipping Address
+        {% endcase %}
+      </h2>
+      <address>
+        {{ user.name }}<br>
+        {{ user.street }}<br>
+        {{ user.city }}, {{ user.zip }}<br>
+        {{ user.country }}
+      </address>
+    </section>
+
+    <footer class="email-footer">
+      <p>
+        {% case locale %}
+          {% when "ja" %}ご不明な点がございましたら、お気軽にお問い合わせください。
+          {% when "de" %}Bei Fragen kontaktieren Sie uns bitte.
+          {% when "fr" %}Pour toute question, n'hésitez pas à nous contacter.
+          {% when "es" %}Si tiene alguna pregunta, no dude en contactarnos.
+          {% else %}If you have any questions, please contact us.
+        {% endcase %}
+      </p>
+      <p>&copy; 2024 Online Store</p>
+    </footer>
+  </div>
+</body>
+</html>

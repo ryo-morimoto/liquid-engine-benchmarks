@@ -1,0 +1,26 @@
+{% for collection in collections %}
+  <section class="collection">
+    <h2>{{ collection.title }}</h2>
+    <p>{{ collection.description }}</p>
+
+    <div class="products">
+      {% for product in collection.products %}
+        <article class="product-card">
+          <h3>{{ product.title }}</h3>
+          <p class="price">${{ product.price | divided_by: 100 }}</p>
+
+          {% if product.variants.size > 0 %}
+            <ul class="variants">
+              {% for variant in product.variants %}
+                <li>
+                  {{ variant.title }} - ${{ variant.price | divided_by: 100 }}
+                  {% unless variant.available %}(Sold Out){% endunless %}
+                </li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </article>
+      {% endfor %}
+    </div>
+  </section>
+{% endfor %}
