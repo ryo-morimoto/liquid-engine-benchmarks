@@ -1,6 +1,9 @@
 # direnv cache
 .direnv/
 
+# Build output (generated)
+dist/
+
 # Benchmark results (generated)
 results/
 
@@ -8,6 +11,10 @@ results/
 node_modules/
 vendor/
 .bundle/
+
+# Auto-generated dependency files (from leb.config.json via nix shellHook)
+composer.json
+Gemfile
 
 # Lock files (regenerated per environment)
 bun.lock
