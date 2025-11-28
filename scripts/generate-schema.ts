@@ -89,4 +89,8 @@ async function main(): Promise<void> {
   console.log("\nDone!");
 }
 
-main();
+// Run main function with proper error handling
+main().catch((error: Error) => {
+  console.error("Fatal error:", error.message);
+  process.exit(1);
+});
