@@ -1,6 +1,6 @@
 # 開発環境
 
-Nix による再現可能な開発環境とライブラリ管理。素材準備と並行作業可能。
+Nix Flakes による再現可能な開発環境とベンチマーク実行基盤。
 
 ## 依存関係
 
@@ -14,53 +14,46 @@ Nix による再現可能な開発環境とライブラリ管理。素材準備�
 
 ### 目的
 
-Nix による再現可能な PHP + Ruby 開発環境
+Nix Flakes による再現可能な PHP + Ruby 開発環境
 
 ### 成果物
 
-- shell.nix
+- flake.nix
+- flake.lock
 - .envrc
+- nix/shells/php.nix
+- nix/shells/ruby.nix
+- nix/shells/all.nix
 
-### shell.nix
+### ディレクトリ構成
 
-```nix
-{ pkgs ? import <nixpkgs> {} }:
-
-pkgs.mkShell {
-  buildInputs = with pkgs; [
-    # PHP 環境
-    php83
-    php83Packages.composer
-    php83Extensions.opcache
-    php83Extensions.yaml
-
-    # Ruby 環境
-    ruby_3_3
-    bundler
-
-    # ユーティリティ
-    jq
-    yq-go      # YAML処理
-    gnuplot    # グラフ生成（オプション）
-  ];
-
-  shellHook = ''
-    echo "Liquid Benchmark Environment"
-    echo "  PHP: $(php -v | head -1)"
-    echo "  Ruby: $(ruby -v)"
-
-    # PHP OPcache/JIT設定
-    export PHP_CLI_SERVER_WORKERS=4
-
-    # Ruby YJIT有効化
-    export RUBY_YJIT_ENABLE=1
-  '';
-}
 ```
+nix/
+└── shells/
+    ├── php.nix     # PHP 8.3 + OPcache/JIT
+    ├── ruby.nix    # Ruby 3.3 + YJIT
+    └── all.nix     # 全言語 + ユーティリティ
+```
+
+### 使用方法
+
+```bash
+nix develop          # 全言語（デフォルト）
+nix develop .#php    # PHP のみ
+nix develop .#ruby   # Ruby のみ
+```
+
+### .envrc
+
+```bash
+use flake
+```
+
+direnv + nix-direnv でディレクトリに入ると自動で環境が有効化される。
 
 ### PHP OPcache/JIT 設定
 
-ベンチマーク実行時は以下の設定を使用（phpbench.json で設定）:
+ベンチマーク実行時は以下の設定を使用:
 
 ```ini
 opcache.enable=1
@@ -77,19 +70,14 @@ Ruby 3.3+ では YJIT を有効化して最適なパフォーマンスで測定:
 export RUBY_YJIT_ENABLE=1
 ```
 
-### .envrc
-
-```bash
-use nix
-```
-
 ### 検証項目
 
-- [ ] nix-shell 起動成功
+- [ ] nix develop 起動成功
 - [ ] PHP 8.3 利用可能
 - [ ] Ruby 3.3 利用可能
 - [ ] Composer 利用可能
 - [ ] Bundler 利用可能
+- [ ] Bun 利用可能
 
 ---
 
@@ -97,81 +85,182 @@ use nix
 
 ### 目的
 
-ベンチマーク対象ライブラリのバージョン管理と切替機構
+ベンチマーク対象ライブラリのバージョン管理
+
+### 方針
+
+- **パッケージマネージャに委任**: Composer / Bundler を使用
+- **vendors/ 方式は廃止**: Git clone による管理は行わない
+- **バージョン指定は bench.yaml**: 一元管理
 
 ### 成果物
 
-- vendors/ ディレクトリ
-- scripts/setup-vendors.sh
-- .gitignore 更新
+- bench.yaml
 
-### vendors/ 構成
+### bench.yaml スキーマ
 
-```
-vendors/
-├── shopify-liquid/    # Shopify/liquid (Ruby)
-├── keepsuit-liquid/   # keepsuit/php-liquid (PHP)
-└── kalimatas-liquid/  # kalimatas/php-liquid (PHP)
-```
+```yaml
+# ランタイムバージョン
+runtimes:
+  php: "8.3"
+  ruby: "3.3"
 
-### scripts/setup-vendors.sh
+# ベースライン（比較基準）
+baseline:
+  library: shopify
+  version: "5.6.0"
 
-```bash
-#!/bin/bash
-set -euo pipefail
+# 対象ライブラリ
+libraries:
+  - lang: php
+    name: keepsuit
+    package: keepsuit/php-liquid
+    versions: ["0.9.0", "0.10.0"]
 
-VENDORS_DIR="vendors"
-mkdir -p "$VENDORS_DIR"
+  - lang: php
+    name: kalimatas
+    package: kalimatas/php-liquid
+    versions: ["1.5.0"]
 
-# Shopify/liquid (Ruby)
-if [ ! -d "$VENDORS_DIR/shopify-liquid" ]; then
-    git clone https://github.com/Shopify/liquid.git "$VENDORS_DIR/shopify-liquid"
-else
-    git -C "$VENDORS_DIR/shopify-liquid" fetch --tags
-fi
-
-# keepsuit/php-liquid (PHP)
-if [ ! -d "$VENDORS_DIR/keepsuit-liquid" ]; then
-    git clone https://github.com/keepsuit/php-liquid.git "$VENDORS_DIR/keepsuit-liquid"
-else
-    git -C "$VENDORS_DIR/keepsuit-liquid" fetch --tags
-fi
-
-# kalimatas/php-liquid (PHP)
-if [ ! -d "$VENDORS_DIR/kalimatas-liquid" ]; then
-    git clone https://github.com/kalimatas/php-liquid.git "$VENDORS_DIR/kalimatas-liquid"
-else
-    git -C "$VENDORS_DIR/kalimatas-liquid" fetch --tags
-fi
-
-echo "Vendors setup complete"
+  - lang: ruby
+    name: shopify
+    package: liquid
+    versions: ["5.5.0", "5.6.0"]
 ```
 
-### バージョン切替
-
-```bash
-# バージョン切替例
-cd vendors/keepsuit-liquid
-git checkout v0.9.0
-cd ../../php
-composer update
-
-# Ruby
-cd vendors/shopify-liquid
-git checkout v5.8.0
-cd ../../ruby
-bundle install
-```
-
-### .gitignore 追加
+### 実行フロー
 
 ```
-vendors/
+bench.yaml
+    │
+    ▼ パース
+┌───────────────────────────────────────┐
+│ Matrix 生成                            │
+│  - php / keepsuit / 0.9.0             │
+│  - php / keepsuit / 0.10.0            │
+│  - php / kalimatas / 1.5.0            │
+│  - ruby / shopify / 5.5.0             │
+│  - ruby / shopify / 5.6.0             │
+└───────────────────────────────────────┘
+    │
+    ▼ 並列実行
+┌─────────────────────────────────────────┐
+│ 各組み合わせで:                           │
+│  1. 一時ディレクトリ作成                   │
+│  2. composer.json / Gemfile 生成         │
+│  3. 依存インストール                       │
+│  4. ベンチマーク実行                       │
+│  5. 結果 JSON 出力                        │
+└─────────────────────────────────────────┘
+    │
+    ▼
+results/{lang}-{library}-{version}.json
 ```
 
 ### 検証項目
 
-- [ ] setup-vendors.sh 実行成功
-- [ ] 各バージョンへの切替確認
-- [ ] PHP composer install 成功
-- [ ] Ruby bundle install 成功
+- [ ] bench.yaml パース成功
+- [ ] Matrix 生成成功
+- [ ] 各ライブラリのインストール成功
+
+---
+
+## ベンチマーク実行
+
+### 目的
+
+言語非依存でフェーズ別（parse/render）の時間を計測
+
+### 方針
+
+- **hyperfine**: 全体時間の計測・統計
+- **スクリプト内計測**: parse/render のフェーズ別時間
+- **アダプターパターン**: ライブラリごとの API 差異を吸収
+
+### ディレクトリ構成
+
+```
+benchmarks/
+├── adapters/
+│   ├── php/
+│   │   ├── interface.php     # 共通インターフェース
+│   │   ├── keepsuit.php      # Keepsuit アダプター
+│   │   └── kalimatas.php     # Kalimatas アダプター
+│   └── ruby/
+│       ├── interface.rb      # 共通インターフェース
+│       └── shopify.rb        # Shopify アダプター
+├── run.php                   # PHP エントリポイント
+└── run.rb                    # Ruby エントリポイント
+```
+
+### エントリポイント仕様
+
+```bash
+php benchmarks/run.php \
+  --adapter=keepsuit \
+  --template=primitive/variable \
+  --scale=medium \
+  --iterations=100
+```
+
+### 出力 JSON スキーマ
+
+```json
+{
+  "library": "keepsuit/php-liquid",
+  "version": "0.9.0",
+  "runtime": "php 8.3.0",
+  "template": "primitive/variable",
+  "scale": "medium",
+  "iterations": 100,
+  "timings": {
+    "parse_ms": 1.23,
+    "render_ms": 4.56,
+    "total_ms": 5.79
+  },
+  "memory_peak_bytes": 1048576,
+  "timestamp": "2024-11-29T12:00:00Z"
+}
+```
+
+### 検証項目
+
+- [ ] PHP アダプター動作確認
+- [ ] Ruby アダプター動作確認
+- [ ] JSON 出力形式確認
+
+---
+
+## テスト
+
+### 目的
+
+アダプター出力が JSON Schema に準拠しているか検証
+
+### 方針
+
+- **Bun + Ajv**: JSON Schema バリデーション
+- **各アダプターをテスト**: 出力形式の統一を保証
+
+### ディレクトリ構成
+
+```
+tests/
+├── package.json
+├── schema/
+│   └── result.json           # JSON Schema 定義
+└── adapters.test.ts          # テストコード
+```
+
+### 実行方法
+
+```bash
+cd tests
+bun install
+bun test
+```
+
+### 検証項目
+
+- [ ] bun test 成功
+- [ ] 全アダプターの出力が Schema 準拠
