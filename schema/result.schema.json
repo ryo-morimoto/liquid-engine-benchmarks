@@ -1,0 +1,129 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/ryo-morimoto/liquid-engine-benchmarks/schema/result.schema.json",
+  "title": "Benchmark Result",
+  "description": "Schema for benchmark execution result output",
+  "definitions": {
+    "benchmarkEntry": {
+      "type": "object",
+      "description": "Single benchmark result entry for a library version",
+      "required": ["library", "version", "lang", "timings"],
+      "additionalProperties": false,
+      "properties": {
+        "library": {
+          "$ref": "base.schema.json#/definitions/libraryName",
+          "description": "Library name (matches name in bench.yaml)"
+        },
+        "version": {
+          "$ref": "base.schema.json#/definitions/semver",
+          "description": "Library version"
+        },
+        "lang": {
+          "$ref": "base.schema.json#/definitions/lang",
+          "description": "Programming language"
+        },
+        "timings": {
+          "$ref": "#/definitions/timingMetrics"
+        },
+        "baseline_ratio": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Performance ratio compared to baseline (1.0 = same as baseline)"
+        }
+      }
+    },
+    "timingMetrics": {
+      "type": "object",
+      "description": "Timing measurements for benchmark phases",
+      "required": ["parse", "render", "total"],
+      "additionalProperties": false,
+      "properties": {
+        "parse": {
+          "$ref": "#/definitions/phaseMetrics",
+          "description": "Template parsing phase metrics"
+        },
+        "render": {
+          "$ref": "#/definitions/phaseMetrics",
+          "description": "Template rendering phase metrics"
+        },
+        "total": {
+          "$ref": "#/definitions/phaseMetrics",
+          "description": "Total execution time metrics"
+        }
+      }
+    },
+    "phaseMetrics": {
+      "type": "object",
+      "description": "Statistical metrics for a single phase",
+      "required": ["mean_ms"],
+      "additionalProperties": false,
+      "properties": {
+        "mean_ms": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Mean execution time in milliseconds"
+        },
+        "stddev_ms": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Standard deviation in milliseconds"
+        },
+        "min_ms": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Minimum execution time in milliseconds"
+        },
+        "max_ms": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Maximum execution time in milliseconds"
+        },
+        "median_ms": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Median execution time in milliseconds"
+        }
+      }
+    }
+  },
+  "type": "object",
+  "required": ["meta", "results"],
+  "additionalProperties": false,
+  "properties": {
+    "meta": {
+      "type": "object",
+      "description": "Metadata about the benchmark execution",
+      "required": ["timestamp", "iterations", "template"],
+      "additionalProperties": false,
+      "properties": {
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp when benchmark was executed"
+        },
+        "iterations": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Number of iterations per benchmark run"
+        },
+        "template": {
+          "type": "string",
+          "description": "Template file or identifier used for benchmarking"
+        },
+        "warmup": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of warmup iterations before measurement"
+        }
+      }
+    },
+    "results": {
+      "type": "array",
+      "description": "Benchmark results for each library/version combination",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/benchmarkEntry"
+      }
+    }
+  }
+}
