@@ -1,0 +1,18 @@
+{%- comment -%}
+Unit test: liquid tag (multi-line)
+Cleaner syntax for multiple Liquid statements
+Support: shopify >=5.0, keepsuit >=1.0
+{%- endcomment -%}
+{% liquid
+  assign name = product.name
+  assign price = product.price
+  assign discounted = price | times: 0.9
+
+  if discounted < 100
+    echo "Affordable: "
+  else
+    echo "Premium: "
+  endif
+
+  echo name
+%}

@@ -1,0 +1,17 @@
+{%- comment -%}
+Partial: base layout for extends/block test
+Used by kalimatas extends tag
+{%- endcomment -%}
+<!DOCTYPE html>
+<html>
+<head>
+  <title>{% block title %}Default Title{% endblock %}</title>
+</head>
+<body>
+  <header>Header</header>
+  <main>
+    {% block content %}Default content{% endblock %}
+  </main>
+  <footer>Footer</footer>
+</body>
+</html>

@@ -1,0 +1,6 @@
+{%- comment -%}
+Unit test: escape/escape_once filters
+HTML escaping
+{%- endcomment -%}
+{{ "<script>alert('xss')</script>" | escape }}
+{{ "&lt;already&gt;" | escape_once }}

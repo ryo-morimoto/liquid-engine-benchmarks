@@ -1,0 +1,10 @@
+{%- comment -%}
+Unit test: capture tag
+Measures string capture and concatenation performance
+{%- endcomment -%}
+{% capture product_info %}
+Name: {{ product.name }}
+Price: {{ product.price }}
+Type: {{ product.type }}
+{% endcapture %}
+{{ product_info }}

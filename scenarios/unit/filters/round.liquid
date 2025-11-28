@@ -1,0 +1,9 @@
+{%- comment -%}
+Unit test: round/floor/ceil filters
+Number rounding operations
+{%- endcomment -%}
+{% assign price = 99.567 %}
+Round: {{ price | round }}
+Round 2: {{ price | round: 2 }}
+Floor: {{ price | floor }}
+Ceil: {{ price | ceil }}

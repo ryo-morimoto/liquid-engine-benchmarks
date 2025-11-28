@@ -1,0 +1,7 @@
+{%- comment -%}
+Unit test: replace/replace_first/remove filters
+String replacement
+{%- endcomment -%}
+{{ "hello world world" | replace: 'world', 'liquid' }}
+{{ "hello world world" | replace_first: 'world', 'liquid' }}
+{{ "hello world" | remove: 'world' }}

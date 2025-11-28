@@ -1,0 +1,9 @@
+{%- comment -%}
+Composite test: manual sum with loop
+Alternative to sum filter using loop accumulation
+{%- endcomment -%}
+{% assign total = 0 %}
+{% for item in items %}
+  {% assign total = total | plus: item.price %}
+{% endfor %}
+Total: {{ total }}

@@ -1,0 +1,16 @@
+{%- comment -%}
+Unit test: case/when tag
+Measures switch-style conditional performance
+{%- endcomment -%}
+{% case product.type %}
+  {% when "shirt" %}
+Apparel: {{ product.name }}
+  {% when "electronics" %}
+Tech: {{ product.name }}
+  {% when "food" %}
+Grocery: {{ product.name }}
+  {% when "book" %}
+Media: {{ product.name }}
+  {% else %}
+Other: {{ product.name }}
+{% endcase %}

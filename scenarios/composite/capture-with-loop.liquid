@@ -1,0 +1,10 @@
+{%- comment -%}
+Composite test: capture with loop
+Build string output in loop using capture
+{%- endcomment -%}
+{% capture output %}
+{% for item in items %}
+- {{ item.name }}: {{ item.price }}
+{% endfor %}
+{% endcapture %}
+<pre>{{ output }}</pre>

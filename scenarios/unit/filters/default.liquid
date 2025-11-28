@@ -1,0 +1,6 @@
+{%- comment -%}
+Unit test: default filter
+Fallback value for nil/empty
+{%- endcomment -%}
+{{ product.description | default: 'No description' }}
+{{ missing_var | default: 'Fallback value' }}

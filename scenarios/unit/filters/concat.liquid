@@ -1,0 +1,7 @@
+{%- comment -%}
+Unit test: concat filter
+Concatenate arrays
+{%- endcomment -%}
+{% assign arr1 = "a,b,c" | split: ',' %}
+{% assign arr2 = "x,y,z" | split: ',' %}
+{{ arr1 | concat: arr2 | join: ', ' }}

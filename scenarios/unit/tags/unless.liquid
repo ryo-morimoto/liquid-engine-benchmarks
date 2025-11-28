@@ -1,0 +1,7 @@
+{%- comment -%}
+Unit test: unless tag
+Measures negated conditional evaluation
+{%- endcomment -%}
+{% unless product.sold_out %}
+{{ product.name }} - {{ product.price }}
+{% endunless %}

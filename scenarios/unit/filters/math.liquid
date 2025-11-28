@@ -1,0 +1,10 @@
+{%- comment -%}
+Unit test: math filters
+Arithmetic operations: plus, minus, times, divided_by, modulo
+{%- endcomment -%}
+{% assign price = product.price %}
+Plus 10: {{ price | plus: 10 }}
+Minus 5: {{ price | minus: 5 }}
+Times 2: {{ price | times: 2 }}
+Divided by 4: {{ price | divided_by: 4 }}
+Modulo 3: {{ price | modulo: 3 }}

@@ -1,0 +1,7 @@
+{%- comment -%}
+Unit test: render tag (scope isolated)
+Measures partial rendering with scope isolation
+Requires: partials/product-card.liquid
+Support: shopify >=3.0, keepsuit >=1.0
+{%- endcomment -%}
+{% render 'product-card', product: product %}

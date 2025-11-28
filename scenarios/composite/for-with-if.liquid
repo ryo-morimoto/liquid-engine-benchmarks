@@ -1,0 +1,13 @@
+{%- comment -%}
+Composite test: for loop with conditional
+Loop iteration with condition check per item
+{%- endcomment -%}
+{% for item in items %}
+  {% if item.available %}
+    {% if item.price > 100 %}
+<div class="premium">{{ item.name }}: {{ item.price }}</div>
+    {% else %}
+<div class="regular">{{ item.name }}: {{ item.price }}</div>
+    {% endif %}
+  {% endif %}
+{% endfor %}

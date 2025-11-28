@@ -1,0 +1,8 @@
+{%- comment -%}
+Unit test: assign tag
+Measures variable assignment performance
+{%- endcomment -%}
+{% assign name = product.name %}
+{% assign price = product.price %}
+{% assign discounted = price | times: 0.9 %}
+{{ name }}: {{ discounted }}

@@ -1,0 +1,8 @@
+{%- comment -%}
+Composite test: for loop with include
+Partial inclusion inside loop
+Requires: partials/product-card.liquid
+{%- endcomment -%}
+{% for product in items %}
+  {% include 'product-card', product: product %}
+{% endfor %}

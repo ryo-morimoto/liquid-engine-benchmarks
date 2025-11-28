@@ -1,0 +1,8 @@
+{%- comment -%}
+Unit test: base64_encode/base64_decode filters
+Base64 encoding and decoding
+Support: shopify >=5.0, keepsuit >=1.0
+{%- endcomment -%}
+{% assign encoded = 'hello world' | base64_encode %}
+Encoded: {{ encoded }}
+Decoded: {{ encoded | base64_decode }}

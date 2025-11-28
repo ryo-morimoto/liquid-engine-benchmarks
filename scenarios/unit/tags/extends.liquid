@@ -1,0 +1,11 @@
+{%- comment -%}
+Unit test: extends/block tag (template inheritance)
+Support: kalimatas only
+Requires: partials/base-layout.liquid
+{%- endcomment -%}
+{% extends 'base-layout' %}
+
+{% block content %}
+<h1>{{ product.name }}</h1>
+<p>{{ product.description }}</p>
+{% endblock %}

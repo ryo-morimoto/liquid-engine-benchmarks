@@ -1,0 +1,19 @@
+{%- comment -%}
+Unit test: compound conditions with and/or
+Measures performance of complex boolean expressions
+{%- endcomment -%}
+{% if product.available and product.price > 0 %}
+Available for purchase
+{% endif %}
+
+{% if product.on_sale or product.featured %}
+Special product
+{% endif %}
+
+{% if product.available and product.price > 50 and product.inventory > 10 %}
+Well stocked premium item
+{% endif %}
+
+{% if product.type == "shirt" or product.type == "pants" or product.type == "shoes" %}
+Clothing item
+{% endif %}

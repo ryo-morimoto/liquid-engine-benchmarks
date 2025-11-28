@@ -1,0 +1,7 @@
+{%- comment -%}
+Composite test: filter chain inside loop
+Multiple filter operations per iteration
+{%- endcomment -%}
+{% for item in items %}
+{{ item.name | upcase | slice: 0, 10 }}: {{ item.price | times: 1.1 | round: 2 }}
+{% endfor %}

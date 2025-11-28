@@ -1,0 +1,9 @@
+{%- comment -%}
+Unit test: reject filter
+Filter array by inverse condition
+Support: shopify >=5.0, keepsuit >=2.0
+{%- endcomment -%}
+{% assign unavailable = items | reject: 'available', true %}
+{% for item in unavailable %}
+{{ item.name }}
+{% endfor %}

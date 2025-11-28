@@ -1,0 +1,5 @@
+{%- comment -%}
+Unit test: reverse filter
+Reverse array order
+{%- endcomment -%}
+{{ items | reverse | map: 'name' | join: ', ' }}

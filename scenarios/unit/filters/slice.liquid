@@ -1,0 +1,6 @@
+{%- comment -%}
+Unit test: slice filter
+Extract substring or array slice
+{%- endcomment -%}
+{{ "hello world" | slice: 0, 5 }}
+{{ items | slice: 0, 3 | map: 'name' | join: ', ' }}

@@ -1,0 +1,8 @@
+{%- comment -%}
+Unit test: strip/lstrip/rstrip filters
+Whitespace removal
+{%- endcomment -%}
+{% assign text = "  hello world  " %}
+Strip: [{{ text | strip }}]
+Lstrip: [{{ text | lstrip }}]
+Rstrip: [{{ text | rstrip }}]

@@ -1,0 +1,8 @@
+{%- comment -%}
+Unit test: sort filter
+Sort array by property
+{%- endcomment -%}
+{% assign sorted = items | sort: 'price' %}
+{% for item in sorted %}
+{{ item.name }}: {{ item.price }}
+{% endfor %}

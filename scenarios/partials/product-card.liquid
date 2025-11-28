@@ -1,0 +1,11 @@
+{%- comment -%}
+Partial: product card component
+Used by include/render tests
+{%- endcomment -%}
+<div class="product-card">
+  <h2>{{ product.name }}</h2>
+  <p>{{ product.price }}</p>
+  {% if product.available %}
+  <span class="in-stock">In Stock</span>
+  {% endif %}
+</div>

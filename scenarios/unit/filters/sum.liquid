@@ -1,0 +1,6 @@
+{%- comment -%}
+Unit test: sum filter
+Sum array values
+Support: shopify >=5.0, keepsuit >=2.0
+{%- endcomment -%}
+{{ items | map: 'price' | sum }}

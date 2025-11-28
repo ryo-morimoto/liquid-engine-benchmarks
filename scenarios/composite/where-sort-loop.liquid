@@ -1,0 +1,8 @@
+{%- comment -%}
+Composite test: filter then loop
+Array filtering and sorting before iteration
+{%- endcomment -%}
+{% assign available = items | where: 'available', true | sort: 'price' %}
+{% for item in available %}
+{{ item.name }}: {{ item.price }}
+{% endfor %}

@@ -1,0 +1,25 @@
+{%- comment -%}
+Unit test: nested if conditions
+Measures performance of deeply nested conditionals
+{%- endcomment -%}
+{% if product %}
+  {% if product.available %}
+    {% if product.price > 100 %}
+      {% if product.featured %}
+Premium featured product: {{ product.name }}
+      {% else %}
+Premium product: {{ product.name }}
+      {% endif %}
+    {% else %}
+      {% if product.on_sale %}
+On sale: {{ product.name }}
+      {% else %}
+Regular: {{ product.name }}
+      {% endif %}
+    {% endif %}
+  {% else %}
+Out of stock: {{ product.name }}
+  {% endif %}
+{% else %}
+No product
+{% endif %}

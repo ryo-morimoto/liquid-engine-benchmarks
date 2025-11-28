@@ -1,0 +1,16 @@
+{%- comment -%}
+Composite test: case/when inside loop
+Switch statement per iteration
+{%- endcomment -%}
+{% for item in items %}
+  {% case item.type %}
+    {% when 'electronics' %}
+<div class="tech">{{ item.name }}</div>
+    {% when 'clothing' %}
+<div class="apparel">{{ item.name }}</div>
+    {% when 'food' %}
+<div class="grocery">{{ item.name }}</div>
+    {% else %}
+<div class="other">{{ item.name }}</div>
+  {% endcase %}
+{% endfor %}

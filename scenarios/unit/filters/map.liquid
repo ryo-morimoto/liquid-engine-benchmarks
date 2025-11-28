@@ -1,0 +1,5 @@
+{%- comment -%}
+Unit test: map filter
+Extract property from array of objects
+{%- endcomment -%}
+{{ items | map: 'name' | join: ', ' }}

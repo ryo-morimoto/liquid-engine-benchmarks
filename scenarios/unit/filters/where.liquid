@@ -1,0 +1,8 @@
+{%- comment -%}
+Unit test: where filter
+Filter array by property value
+{%- endcomment -%}
+{% assign available = items | where: 'available', true %}
+{% for item in available %}
+{{ item.name }}
+{% endfor %}

@@ -1,0 +1,7 @@
+{%- comment -%}
+Unit test: for tag
+Measures basic loop iteration performance
+{%- endcomment -%}
+{% for item in items %}
+{{ item.name }}: {{ item.price }}
+{% endfor %}

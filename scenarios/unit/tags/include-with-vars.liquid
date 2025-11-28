@@ -1,0 +1,6 @@
+{%- comment -%}
+Unit test: include tag with variable passing
+Measures partial inclusion with parameter overhead
+Requires: partials/product-card.liquid
+{%- endcomment -%}
+{% include 'product-card', product: product, show_price: true %}

@@ -1,0 +1,9 @@
+{%- comment -%}
+Unit test: simple if condition
+Measures basic conditional evaluation
+{%- endcomment -%}
+{% if product.available %}
+{{ product.name }} is available
+{% else %}
+{{ product.name }} is out of stock
+{% endif %}
