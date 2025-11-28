@@ -117,14 +117,20 @@ function parseCliArgs(): RunOptions {
     process.exit(1);
   }
 
-  return {
+  // Build result object conditionally to satisfy exactOptionalPropertyTypes
+  const result: RunOptions = {
     adapter: values.adapter as AdapterName,
     template: values.template,
     scale,
     iterations,
     warmup,
-    output: values.output,
   };
+
+  if (values.output !== undefined) {
+    result.output = values.output;
+  }
+
+  return result;
 }
 
 /**

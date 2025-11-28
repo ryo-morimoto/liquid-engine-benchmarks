@@ -37,11 +37,11 @@ const TEST_INPUT: AdapterInput = {
 async function isAdapterAvailable(adapterName: AdapterName): Promise<boolean> {
   const config = ADAPTERS[adapterName];
 
-  // Check environment skip flags
-  if (config.lang === "php" && process.env.SKIP_PHP_ADAPTERS === "1") {
+  // Check environment skip flags (bracket notation for index signature access)
+  if (config.lang === "php" && process.env["SKIP_PHP_ADAPTERS"] === "1") {
     return false;
   }
-  if (config.lang === "ruby" && process.env.SKIP_RUBY_ADAPTERS === "1") {
+  if (config.lang === "ruby" && process.env["SKIP_RUBY_ADAPTERS"] === "1") {
     return false;
   }
 

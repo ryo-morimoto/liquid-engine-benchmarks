@@ -16,17 +16,21 @@
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "noEmit": true,
+    "isolatedModules": true,
 
-    // Best practices
+    // Strict type checking (maximum strictness)
     "strict": true,
-    "skipLibCheck": true,
+    "exactOptionalPropertyTypes": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
 
-    // Some stricter flags (disabled by default)
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "noPropertyAccessFromIndexSignature": false
+    // Module resolution
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true
   }
 }

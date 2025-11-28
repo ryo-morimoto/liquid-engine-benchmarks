@@ -6,7 +6,7 @@
  */
 
 import type { Lang, Scale } from "./constants";
-import type { PhaseMetrics, SemVer, TimingMetrics } from "./schema";
+import type { SemVer, TimingMetrics } from "./schema";
 
 // Re-export SemVer for convenience
 export type { SemVer } from "./schema";

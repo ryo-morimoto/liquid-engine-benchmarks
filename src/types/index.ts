@@ -45,5 +45,4 @@ export type {
   RunMetadata,
   RunResult,
   RuntimeVersion,
-  SemVer,
 } from "./benchmark";

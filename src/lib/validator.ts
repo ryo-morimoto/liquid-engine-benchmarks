@@ -130,8 +130,14 @@ export function validateWithDetails(schemaId: string, data: unknown): Validation
   }
 
   const valid = validate(data);
+
+  // Return early for valid case to satisfy exactOptionalPropertyTypes
+  if (valid) {
+    return { valid: true };
+  }
+
   return {
-    valid: Boolean(valid),
-    errors: valid ? undefined : formatErrors(validate.errors),
+    valid: false,
+    errors: formatErrors(validate.errors),
   };
 }
