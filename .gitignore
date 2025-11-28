@@ -1,0 +1,24 @@
+# direnv cache
+.direnv/
+
+# Benchmark results (generated)
+results/
+
+# Dependencies
+node_modules/
+vendor/
+.bundle/
+
+# Lock files (regenerated per environment)
+bun.lock
+composer.lock
+Gemfile.lock
+
+# Editor/IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
