@@ -1,0 +1,212 @@
+/**
+ * Adapter Contract Tests
+ *
+ * Verifies that all adapters conform to the adapter-output.schema.json contract.
+ * Each adapter is tested independently to ensure schema compliance.
+ *
+ * These are integration tests that require PHP/Ruby runtimes and dependencies.
+ * Skip tests for unavailable adapters using environment variables:
+ *   SKIP_PHP_ADAPTERS=1 bun test tests/adapters.test.ts
+ *   SKIP_RUBY_ADAPTERS=1 bun test tests/adapters.test.ts
+ */
+
+import { beforeAll, describe, expect, test } from "bun:test";
+import { ADAPTERS, isValidAdapterOutput, listAdapters, runAdapter } from "../../src/lib";
+import type { AdapterInput, AdapterName } from "../../src/types";
+
+/**
+ * Simple template for contract testing.
+ * Tests basic variable substitution.
+ */
+const SIMPLE_TEMPLATE = "Hello, {{ name }}!";
+const SIMPLE_DATA = { name: "World" };
+
+/**
+ * Standard test input for all adapters.
+ */
+const TEST_INPUT: AdapterInput = {
+  template: SIMPLE_TEMPLATE,
+  data: SIMPLE_DATA,
+  iterations: 3,
+  warmup: 1,
+};
+
+/**
+ * Check if an adapter's runtime is available.
+ */
+async function isAdapterAvailable(adapterName: AdapterName): Promise<boolean> {
+  const config = ADAPTERS[adapterName];
+
+  // Check environment skip flags
+  if (config.lang === "php" && process.env.SKIP_PHP_ADAPTERS === "1") {
+    return false;
+  }
+  if (config.lang === "ruby" && process.env.SKIP_RUBY_ADAPTERS === "1") {
+    return false;
+  }
+
+  // Check if runtime command exists
+  const runtimeCommand = config.command[0];
+  if (!runtimeCommand) {
+    return false;
+  }
+  try {
+    const proc = Bun.spawn(["which", runtimeCommand], {
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    const exitCode = await proc.exited;
+    return exitCode === 0;
+  } catch {
+    return false;
+  }
+}
+
+describe("Adapter Contract Tests", () => {
+  const adapters = listAdapters();
+
+  // Track available adapters
+  const availableAdapters: AdapterName[] = [];
+
+  beforeAll(async () => {
+    for (const adapter of adapters) {
+      if (await isAdapterAvailable(adapter)) {
+        availableAdapters.push(adapter);
+      }
+    }
+
+    if (availableAdapters.length === 0) {
+      console.warn("Warning: No adapters available for testing");
+    }
+  });
+
+  describe("Schema Compliance", () => {
+    for (const adapterName of adapters) {
+      test(`${adapterName} adapter produces valid output`, async () => {
+        if (!(await isAdapterAvailable(adapterName))) {
+          console.log(`Skipping ${adapterName}: runtime not available`);
+          return;
+        }
+
+        const result = await runAdapter(adapterName, TEST_INPUT, 60_000);
+
+        // Validate against schema
+        expect(isValidAdapterOutput(result.output)).toBe(true);
+      });
+    }
+  });
+
+  describe("Output Structure", () => {
+    for (const adapterName of adapters) {
+      test(`${adapterName} returns required fields`, async () => {
+        if (!(await isAdapterAvailable(adapterName))) {
+          console.log(`Skipping ${adapterName}: runtime not available`);
+          return;
+        }
+
+        const result = await runAdapter(adapterName, TEST_INPUT, 60_000);
+        const output = result.output;
+
+        // Required fields
+        expect(output.library).toBeDefined();
+        expect(typeof output.library).toBe("string");
+        expect(output.library.length).toBeGreaterThan(0);
+
+        expect(output.version).toBeDefined();
+        expect(typeof output.version).toBe("string");
+
+        expect(output.lang).toBeDefined();
+        expect(["php", "ruby", "go", "rust", "javascript"]).toContain(output.lang);
+
+        expect(output.timings).toBeDefined();
+        expect(output.timings.parse_ms).toBeDefined();
+        expect(output.timings.render_ms).toBeDefined();
+      });
+
+      test(`${adapterName} returns correct timing array lengths`, async () => {
+        if (!(await isAdapterAvailable(adapterName))) {
+          console.log(`Skipping ${adapterName}: runtime not available`);
+          return;
+        }
+
+        const result = await runAdapter(adapterName, TEST_INPUT, 60_000);
+        const { timings } = result.output;
+
+        // Arrays should match iterations count
+        expect(timings.parse_ms.length).toBe(TEST_INPUT.iterations);
+        expect(timings.render_ms.length).toBe(TEST_INPUT.iterations);
+
+        // All values should be non-negative numbers
+        for (const ms of timings.parse_ms) {
+          expect(typeof ms).toBe("number");
+          expect(ms).toBeGreaterThanOrEqual(0);
+        }
+
+        for (const ms of timings.render_ms) {
+          expect(typeof ms).toBe("number");
+          expect(ms).toBeGreaterThanOrEqual(0);
+        }
+      });
+    }
+  });
+
+  describe("Language Correctness", () => {
+    test("PHP adapters report lang as php", async () => {
+      for (const adapterName of adapters) {
+        const config = ADAPTERS[adapterName];
+        if (config.lang !== "php") continue;
+
+        if (!(await isAdapterAvailable(adapterName))) {
+          console.log(`Skipping ${adapterName}: runtime not available`);
+          continue;
+        }
+
+        const result = await runAdapter(adapterName, TEST_INPUT, 60_000);
+        expect(result.output.lang).toBe("php");
+      }
+    });
+
+    test("Ruby adapters report lang as ruby", async () => {
+      for (const adapterName of adapters) {
+        const config = ADAPTERS[adapterName];
+        if (config.lang !== "ruby") continue;
+
+        if (!(await isAdapterAvailable(adapterName))) {
+          console.log(`Skipping ${adapterName}: runtime not available`);
+          continue;
+        }
+
+        const result = await runAdapter(adapterName, TEST_INPUT, 60_000);
+        expect(result.output.lang).toBe("ruby");
+      }
+    });
+  });
+
+  describe("Error Handling", () => {
+    test("adapters handle invalid template gracefully", async () => {
+      const invalidInput: AdapterInput = {
+        template: "{{ invalid | nonexistent_filter }}",
+        data: {},
+        iterations: 1,
+        warmup: 0,
+      };
+
+      for (const adapterName of adapters) {
+        if (!(await isAdapterAvailable(adapterName))) {
+          continue;
+        }
+
+        // Some adapters may throw, others may return error in output
+        // The key is they shouldn't hang or crash unexpectedly
+        try {
+          const result = await runAdapter(adapterName, invalidInput, 30_000);
+          // If it succeeds, output should still be valid
+          expect(isValidAdapterOutput(result.output)).toBe(true);
+        } catch (error) {
+          // Expected for strict-mode adapters
+          expect(error).toBeDefined();
+        }
+      }
+    });
+  });
+});
