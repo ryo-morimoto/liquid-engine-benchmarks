@@ -7,6 +7,10 @@
   "required": ["runtimes", "baseline", "libraries"],
   "additionalProperties": false,
   "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON Schema reference for editor support"
+    },
     "runtimes": {
       "type": "object",
       "description": "Runtime versions for each language",

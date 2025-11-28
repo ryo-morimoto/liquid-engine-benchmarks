@@ -1,19 +1,18 @@
 #!/usr/bin/env bun
 /**
- * Validate YAML files against JSON Schema
+ * Validate JSON files against JSON Schema
  * Automatically loads base.schema.json for external $ref resolution
- * Usage: bun scripts/ajv.ts <schema> <yaml-file>
+ * Usage: bun scripts/ajv.ts <schema> <json-file>
  */
 
 import Ajv from "ajv";
 import addFormats from "ajv-formats";
-import { parse } from "yaml";
 import { dirname, join } from "path";
 
-const [schemaPath, yamlPath] = Bun.argv.slice(2);
+const [schemaPath, jsonPath] = Bun.argv.slice(2);
 
-if (!schemaPath || !yamlPath) {
-  console.error("Usage: bun scripts/ajv.ts <schema> <yaml-file>");
+if (!schemaPath || !jsonPath) {
+  console.error("Usage: bun scripts/ajv.ts <schema> <json-file>");
   process.exit(1);
 }
 
@@ -31,10 +30,10 @@ if (await baseSchemaFile.exists()) {
 }
 
 const schema = await Bun.file(schemaPath).json();
-const yaml = parse(await Bun.file(yamlPath).text());
+const data = await Bun.file(jsonPath).json();
 
 const validate = ajv.compile(schema);
-const valid = validate(yaml);
+const valid = validate(data);
 
 if (!valid) {
   console.error("Validation failed:");
@@ -42,4 +41,4 @@ if (!valid) {
   process.exit(1);
 }
 
-console.log(`✓ ${yamlPath} is valid`);
+console.log(`✓ ${jsonPath} is valid`);

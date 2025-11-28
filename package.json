@@ -2,12 +2,11 @@
   "name": "liquid-engine-benchmarks",
   "type": "module",
   "scripts": {
-    "validate:bench": "bun scripts/ajv.ts schema/bench.schema.json bench.yaml",
+    "validate:bench": "bun scripts/ajv.ts schema/bench.schema.json bench.json",
     "validate:result": "bun scripts/ajv.ts schema/result.schema.json"
   },
   "devDependencies": {
     "ajv": "^8.17.0",
-    "ajv-formats": "^3.0.0",
-    "yaml": "^2.6.0"
+    "ajv-formats": "^3.0.0"
   }
 }
