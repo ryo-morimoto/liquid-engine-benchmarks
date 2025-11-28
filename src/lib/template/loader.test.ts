@@ -1,61 +1,72 @@
 /**
- * template loader unit tests
+ * Scenario Loader Unit Tests
+ *
+ * Tests for the ScenarioLoader class which loads Liquid scenario files
+ * from the scenarios directory with hierarchical category support.
  */
 
 import { describe, expect, test } from "bun:test";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  createTemplateLoader,
-  loadTemplate,
-  loadTemplates,
-  TemplateLoader,
+  createScenarioLoader,
+  loadScenario,
+  loadScenarios,
+  ScenarioLoader,
 } from "./loader";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const TEMPLATES_DIR = join(__dirname, "../../../templates");
+const SCENARIOS_DIR = join(__dirname, "../../../scenarios");
 
-describe("TemplateLoader", () => {
-  const loader = new TemplateLoader(TEMPLATES_DIR);
+describe("ScenarioLoader", () => {
+  const loader = new ScenarioLoader(SCENARIOS_DIR);
 
   describe("listCategories", () => {
     test("returns available categories", () => {
       const categories = loader.listCategories();
 
-      expect(categories).toContain("primitive");
-      expect(categories).toContain("ecommerce");
-      expect(categories).toContain("blog");
+      expect(categories).toContain("unit/tags");
+      expect(categories).toContain("unit/filters");
+      expect(categories).toContain("composite");
     });
 
-    test("returns only directories", () => {
+    test("returns hierarchical categories", () => {
       const categories = loader.listCategories();
 
-      // Should not contain files
-      expect(categories.every((c) => !c.includes("."))).toBe(true);
+      // Should contain hierarchical paths
+      const unitCategories = categories.filter((c) => c.startsWith("unit/"));
+      expect(unitCategories.length).toBeGreaterThanOrEqual(2);
     });
   });
 
   describe("listCategory", () => {
-    test("lists templates in primitive category", () => {
-      const templates = loader.listCategory("primitive");
+    test("lists scenarios in unit/tags category", () => {
+      const scenarios = loader.listCategory("unit/tags");
 
-      expect(templates).toContain("variable");
-      expect(templates).toContain("loop-simple");
-      expect(templates).toContain("condition-simple");
+      expect(scenarios).toContain("for");
+      expect(scenarios).toContain("if-simple");
+      expect(scenarios).toContain("assign");
     });
 
-    test("lists templates in ecommerce category", () => {
-      const templates = loader.listCategory("ecommerce");
+    test("lists scenarios in unit/filters category", () => {
+      const scenarios = loader.listCategory("unit/filters");
 
-      expect(templates).toContain("product");
-      expect(templates).toContain("cart");
-      expect(templates).toContain("collection");
+      expect(scenarios).toContain("map");
+      expect(scenarios).toContain("where");
+      expect(scenarios).toContain("sort");
+    });
+
+    test("lists scenarios in composite category", () => {
+      const scenarios = loader.listCategory("composite");
+
+      expect(scenarios).toContain("for-with-if");
+      expect(scenarios).toContain("filter-chain-in-loop");
     });
 
     test("returns names without .liquid extension", () => {
-      const templates = loader.listCategory("primitive");
+      const scenarios = loader.listCategory("unit/tags");
 
-      expect(templates.every((t) => !t.includes(".liquid"))).toBe(true);
+      expect(scenarios.every((s) => !s.includes(".liquid"))).toBe(true);
     });
 
     test("throws for non-existent category", () => {
@@ -64,47 +75,75 @@ describe("TemplateLoader", () => {
   });
 
   describe("load", () => {
-    test("loads template content", async () => {
-      const content = await loader.load("primitive", "variable");
+    test("loads scenario content from unit/tags", async () => {
+      const content = await loader.load("unit/tags", "for");
+
+      expect(content).toContain("{%");
+      expect(typeof content).toBe("string");
+    });
+
+    test("loads scenario content from unit/filters", async () => {
+      const content = await loader.load("unit/filters", "map");
 
       expect(content).toContain("{{");
       expect(typeof content).toBe("string");
     });
 
-    test("throws for non-existent template", () => {
-      expect(loader.load("primitive", "nonexistent")).rejects.toThrow(
-        "Template not found: primitive/nonexistent"
+    test("throws for non-existent scenario", () => {
+      expect(loader.load("unit/tags", "nonexistent")).rejects.toThrow(
+        "Template not found: unit/tags/nonexistent"
       );
     });
   });
 
   describe("loadByPath", () => {
-    test("loads template by path", async () => {
-      const content = await loader.loadByPath("primitive/variable");
+    test("loads scenario by 3-level path (unit/tags/for)", async () => {
+      const content = await loader.loadByPath("unit/tags/for");
+
+      expect(content).toContain("{%");
+    });
+
+    test("loads scenario by 3-level path (unit/filters/map)", async () => {
+      const content = await loader.loadByPath("unit/filters/map");
 
       expect(content).toContain("{{");
     });
 
+    test("loads scenario by 2-level path (composite/for-with-if)", async () => {
+      const content = await loader.loadByPath("composite/for-with-if");
+
+      expect(content).toContain("{%");
+    });
+
     test("throws for invalid path format", () => {
-      expect(loader.loadByPath("invalid")).rejects.toThrow("Invalid template path: invalid");
+      expect(loader.loadByPath("invalid")).rejects.toThrow("Invalid scenario path: invalid");
     });
 
     test("throws for non-existent path", () => {
-      expect(loader.loadByPath("primitive/nonexistent")).rejects.toThrow(
-        "Template not found: primitive/nonexistent"
+      expect(loader.loadByPath("unit/tags/nonexistent")).rejects.toThrow(
+        "Template not found: unit/tags/nonexistent"
       );
     });
   });
 
   describe("loadMany", () => {
-    test("loads multiple templates in parallel", async () => {
-      const paths = ["primitive/variable", "primitive/loop-simple"];
+    test("loads multiple scenarios in parallel", async () => {
+      const paths = ["unit/tags/for", "unit/filters/map"];
       const results = await loader.loadMany(paths);
 
       expect(results.size).toBe(2);
-      expect(results.has("primitive/variable")).toBe(true);
-      expect(results.has("primitive/loop-simple")).toBe(true);
-      expect(results.get("primitive/variable")).toContain("{{");
+      expect(results.has("unit/tags/for")).toBe(true);
+      expect(results.has("unit/filters/map")).toBe(true);
+      expect(results.get("unit/tags/for")).toContain("{%");
+    });
+
+    test("loads mixed 2-level and 3-level paths", async () => {
+      const paths = ["unit/tags/for", "composite/for-with-if"];
+      const results = await loader.loadMany(paths);
+
+      expect(results.size).toBe(2);
+      expect(results.has("unit/tags/for")).toBe(true);
+      expect(results.has("composite/for-with-if")).toBe(true);
     });
 
     test("returns empty map for empty input", async () => {
@@ -113,34 +152,42 @@ describe("TemplateLoader", () => {
       expect(results.size).toBe(0);
     });
 
-    test("throws if any template not found", () => {
-      const paths = ["primitive/variable", "primitive/nonexistent"];
+    test("throws if any scenario not found", () => {
+      const paths = ["unit/tags/for", "unit/tags/nonexistent"];
 
-      expect(loader.loadMany(paths)).rejects.toThrow("Template not found: primitive/nonexistent");
+      expect(loader.loadMany(paths)).rejects.toThrow("Template not found: unit/tags/nonexistent");
     });
   });
 
   describe("exists", () => {
-    test("returns true for existing template", () => {
-      expect(loader.exists("primitive", "variable")).toBe(true);
+    test("returns true for existing scenario", () => {
+      expect(loader.exists("unit/tags", "for")).toBe(true);
     });
 
-    test("returns false for non-existent template", () => {
-      expect(loader.exists("primitive", "nonexistent")).toBe(false);
+    test("returns true for existing scenario in unit/filters", () => {
+      expect(loader.exists("unit/filters", "map")).toBe(true);
+    });
+
+    test("returns false for non-existent scenario", () => {
+      expect(loader.exists("unit/tags", "nonexistent")).toBe(false);
     });
 
     test("returns false for non-existent category", () => {
-      expect(loader.exists("nonexistent", "variable")).toBe(false);
+      expect(loader.exists("nonexistent", "for")).toBe(false);
     });
   });
 
   describe("existsByPath", () => {
-    test("returns true for existing path", () => {
-      expect(loader.existsByPath("primitive/variable")).toBe(true);
+    test("returns true for existing 3-level path", () => {
+      expect(loader.existsByPath("unit/tags/for")).toBe(true);
+    });
+
+    test("returns true for existing 2-level path", () => {
+      expect(loader.existsByPath("composite/for-with-if")).toBe(true);
     });
 
     test("returns false for non-existent path", () => {
-      expect(loader.existsByPath("primitive/nonexistent")).toBe(false);
+      expect(loader.existsByPath("unit/tags/nonexistent")).toBe(false);
     });
 
     test("returns false for invalid path", () => {
@@ -149,61 +196,63 @@ describe("TemplateLoader", () => {
   });
 
   describe("listAll", () => {
-    test("returns all templates with metadata", () => {
-      const templates = loader.listAll();
+    test("returns all scenarios with metadata", () => {
+      const scenarios = loader.listAll();
 
-      expect(templates.length).toBeGreaterThan(0);
+      expect(scenarios.length).toBeGreaterThan(0);
 
-      const variable = templates.find((t) => t.path === "primitive/variable");
-      expect(variable).toBeDefined();
-      expect(variable?.category).toBe("primitive");
-      expect(variable?.name).toBe("variable");
+      const forLoop = scenarios.find((s) => s.path === "unit/tags/for");
+      expect(forLoop).toBeDefined();
+      expect(forLoop?.category).toBe("unit/tags");
+      expect(forLoop?.name).toBe("for");
     });
 
-    test("includes templates from multiple categories", () => {
-      const templates = loader.listAll();
+    test("includes scenarios from multiple categories", () => {
+      const scenarios = loader.listAll();
 
-      const categories = new Set(templates.map((t) => t.category));
-      expect(categories.size).toBeGreaterThan(1);
+      const categories = new Set(scenarios.map((s) => s.category));
+      expect(categories.has("unit/tags")).toBe(true);
+      expect(categories.has("unit/filters")).toBe(true);
+      expect(categories.has("composite")).toBe(true);
     });
   });
 });
 
-describe("createTemplateLoader", () => {
+describe("createScenarioLoader", () => {
   test("creates loader with default directory", () => {
-    const loader = createTemplateLoader();
+    const loader = createScenarioLoader();
     const categories = loader.listCategories();
 
     expect(categories.length).toBeGreaterThan(0);
   });
 
   test("creates loader with custom directory", () => {
-    const loader = createTemplateLoader(TEMPLATES_DIR);
+    const loader = createScenarioLoader(SCENARIOS_DIR);
     const categories = loader.listCategories();
 
-    expect(categories).toContain("primitive");
+    expect(categories).toContain("unit/tags");
   });
 });
 
-describe("loadTemplate", () => {
-  test("loads template by path", async () => {
-    const content = await loadTemplate("primitive/variable", TEMPLATES_DIR);
+describe("loadScenario", () => {
+  test("loads scenario by path", async () => {
+    const content = await loadScenario("unit/tags/for", SCENARIOS_DIR);
 
-    expect(content).toContain("{{");
+    expect(content).toContain("{%");
   });
 
-  test("throws for non-existent template", () => {
-    expect(loadTemplate("primitive/nonexistent", TEMPLATES_DIR)).rejects.toThrow();
+  test("throws for non-existent scenario", () => {
+    expect(loadScenario("unit/tags/nonexistent", SCENARIOS_DIR)).rejects.toThrow();
   });
 });
 
-describe("loadTemplates", () => {
-  test("loads multiple templates in parallel", async () => {
-    const paths = ["primitive/variable", "ecommerce/product"];
-    const results = await loadTemplates(paths, TEMPLATES_DIR);
+describe("loadScenarios", () => {
+  test("loads multiple scenarios in parallel", async () => {
+    const paths = ["unit/tags/for", "unit/filters/map"];
+    const results = await loadScenarios(paths, SCENARIOS_DIR);
 
     expect(results.size).toBe(2);
-    expect(results.get("primitive/variable")).toContain("{{");
-    expect(results.get("ecommerce/product")).toContain("{{");
+    expect(results.get("unit/tags/for")).toContain("{%");
+    expect(results.get("unit/filters/map")).toContain("{{");
   });
 });

@@ -1,8 +1,8 @@
 /**
- * Template Loader Module
+ * Scenario Loader Module
  *
- * Loads Liquid template files from the templates directory.
- * Provides utilities for listing and reading templates by category.
+ * Loads Liquid scenario files from the scenarios directory.
+ * Provides utilities for listing and reading scenarios by category.
  * Uses Bun's native file API for async file operations.
  */
 
@@ -11,47 +11,52 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const DEFAULT_TEMPLATES_DIR = join(__dirname, "../../../templates");
+const DEFAULT_SCENARIOS_DIR = join(__dirname, "../../../scenarios");
 
 /**
- * Valid template categories.
+ * Valid scenario categories (hierarchical path format).
+ * - unit/tags: Individual tag tests (for, if, include, etc.)
+ * - unit/filters: Individual filter tests (map, where, sort, etc.)
+ * - composite: Combined feature tests
+ * - partials: Shared partials for include/render
  */
-const VALID_CATEGORIES = ["primitive", "ecommerce", "blog", "email", "cms", "stress"] as const;
+const SCENARIO_CATEGORIES = ["unit/tags", "unit/filters", "composite", "partials"] as const;
 
 /**
- * Template categories available in the templates directory.
+ * Scenario categories available in the scenarios directory.
  */
-export type TemplateCategory = (typeof VALID_CATEGORIES)[number];
+export type ScenarioCategory = (typeof SCENARIO_CATEGORIES)[number];
 
 /**
- * Type guard for TemplateCategory.
+ * Type guard for ScenarioCategory.
  */
-export function isTemplateCategory(value: string): value is TemplateCategory {
-  return (VALID_CATEGORIES as readonly string[]).includes(value);
+export function isScenarioCategory(value: string): value is ScenarioCategory {
+  return (SCENARIO_CATEGORIES as readonly string[]).includes(value);
 }
 
 /**
- * Template metadata.
+ * Scenario metadata.
  */
-export interface TemplateInfo {
-  /** Category (e.g., primitive, ecommerce) */
-  category: TemplateCategory;
-  /** Template name without extension (e.g., variable, product) */
+export interface ScenarioInfo {
+  /** Category (e.g., unit/tags, unit/filters) */
+  category: ScenarioCategory;
+  /** Scenario name without extension (e.g., for, map) */
   name: string;
-  /** Full path to template (e.g., primitive/variable) */
+  /** Full path to scenario (e.g., unit/tags/for) */
   path: string;
 }
 
 /**
- * Template Loader Class
+ * Scenario Loader Class
  *
- * Loads and lists Liquid templates from the filesystem.
+ * Loads and lists Liquid scenarios from the filesystem.
+ * Supports hierarchical category paths (e.g., unit/tags, unit/filters).
  * All file reading operations are async using Bun.file().
  */
-export class TemplateLoader {
+export class ScenarioLoader {
   private baseDir: string;
 
-  constructor(baseDir: string = DEFAULT_TEMPLATES_DIR) {
+  constructor(baseDir: string = DEFAULT_SCENARIOS_DIR) {
     this.baseDir = baseDir;
   }
 
@@ -71,16 +76,39 @@ export class TemplateLoader {
   }
 
   /**
-   * Load a template by path (e.g., "primitive/variable").
+   * Load a scenario by path (e.g., "unit/tags/for", "composite/for-with-if").
+   * Supports both 2-level (composite/x) and 3-level (unit/tags/x) paths.
    */
-  async loadByPath(templatePath: string): Promise<string> {
-    const [category, name] = templatePath.split("/");
+  async loadByPath(scenarioPath: string): Promise<string> {
+    const { category, name } = this.parsePath(scenarioPath);
 
     if (!category || !name) {
-      throw new Error(`Invalid template path: ${templatePath}. Expected format: category/name`);
+      throw new Error(
+        `Invalid scenario path: ${scenarioPath}. Expected format: category/name (e.g., unit/tags/for)`
+      );
     }
 
     return this.load(category, name);
+  }
+
+  /**
+   * Parse a scenario path into category and name.
+   * Handles hierarchical categories like "unit/tags" and flat ones like "composite".
+   */
+  private parsePath(scenarioPath: string): { category: string; name: string } {
+    const parts = scenarioPath.split("/");
+
+    // 3-level: unit/tags/for → category=unit/tags, name=for
+    if (parts.length === 3) {
+      return { category: `${parts[0]}/${parts[1]}`, name: parts[2] };
+    }
+
+    // 2-level: composite/for-with-if → category=composite, name=for-with-if
+    if (parts.length === 2) {
+      return { category: parts[0], name: parts[1] };
+    }
+
+    return { category: "", name: "" };
   }
 
   /**
@@ -115,29 +143,29 @@ export class TemplateLoader {
 
   /**
    * List all available categories.
+   * Returns hierarchical categories (e.g., "unit/tags", "unit/filters", "composite").
    * This operation is synchronous as it only reads directory entries.
    */
-  listCategories(): string[] {
-    const entries = readdirSync(this.baseDir, { withFileTypes: true });
-    return entries.filter((e) => e.isDirectory()).map((e) => e.name);
+  listCategories(): ScenarioCategory[] {
+    // Return the predefined valid categories that exist in the filesystem
+    return SCENARIO_CATEGORIES.filter((cat) => {
+      const categoryDir = join(this.baseDir, cat);
+      return existsSync(categoryDir);
+    });
   }
 
   /**
-   * List all templates with metadata.
+   * List all scenarios with metadata.
    * This operation is synchronous as it only reads directory entries.
    */
-  listAll(): TemplateInfo[] {
+  listAll(): ScenarioInfo[] {
     const categories = this.listCategories();
-    const templates: TemplateInfo[] = [];
+    const scenarios: ScenarioInfo[] = [];
 
     for (const category of categories) {
-      // Skip unknown categories
-      if (!isTemplateCategory(category)) {
-        continue;
-      }
       const names = this.listCategory(category);
       for (const name of names) {
-        templates.push({
+        scenarios.push({
           category,
           name,
           path: `${category}/${name}`,
@@ -145,7 +173,7 @@ export class TemplateLoader {
       }
     }
 
-    return templates;
+    return scenarios;
   }
 
   /**
@@ -158,38 +186,39 @@ export class TemplateLoader {
   }
 
   /**
-   * Check if a template exists by path.
+   * Check if a scenario exists by path.
    * This operation is synchronous as it only checks file existence.
    */
-  existsByPath(templatePath: string): boolean {
-    const [category, name] = templatePath.split("/");
+  existsByPath(scenarioPath: string): boolean {
+    const { category, name } = this.parsePath(scenarioPath);
     if (!category || !name) return false;
     return this.exists(category, name);
   }
 }
 
 /**
- * Create a template loader with the default templates directory.
+ * Create a scenario loader with the default scenarios directory.
  */
-export function createTemplateLoader(baseDir?: string): TemplateLoader {
-  return new TemplateLoader(baseDir);
+export function createScenarioLoader(baseDir?: string): ScenarioLoader {
+  return new ScenarioLoader(baseDir);
 }
 
 /**
- * Load a template by path (convenience function).
+ * Load a scenario by path (convenience function).
  */
-export async function loadTemplate(templatePath: string, baseDir?: string): Promise<string> {
-  const loader = new TemplateLoader(baseDir);
-  return loader.loadByPath(templatePath);
+export async function loadScenario(scenarioPath: string, baseDir?: string): Promise<string> {
+  const loader = new ScenarioLoader(baseDir);
+  return loader.loadByPath(scenarioPath);
 }
 
 /**
- * Load multiple templates in parallel (convenience function).
+ * Load multiple scenarios in parallel (convenience function).
  */
-export async function loadTemplates(
-  templatePaths: string[],
+export async function loadScenarios(
+  scenarioPaths: string[],
   baseDir?: string
 ): Promise<Map<string, string>> {
-  const loader = new TemplateLoader(baseDir);
-  return loader.loadMany(templatePaths);
+  const loader = new ScenarioLoader(baseDir);
+  return loader.loadMany(scenarioPaths);
 }
+
