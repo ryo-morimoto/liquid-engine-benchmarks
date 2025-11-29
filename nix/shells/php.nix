@@ -12,7 +12,6 @@ in
   buildInputs = [
     php
     php.packages.composer
-    pkgs.jq
   ];
 
   # Shell hook executed on environment activation
@@ -22,34 +21,10 @@ in
     # OPcache/JIT settings for CLI
     export PHP_CLI_SERVER_WORKERS=4
 
-    # Generate composer.json from leb.config.json if needed
-    if [ -f leb.config.json ]; then
-      # Extract PHP libraries and generate composer.json
-      COMPOSER_GENERATED=$(jq -r '
-        {
-          "name": "liquid-engine-benchmarks/adapters",
-          "description": "PHP Liquid template engine adapters for benchmarking",
-          "type": "project",
-          "license": "MIT",
-          "require": (
-            { "php": ">=\(.runtimes.php)" } +
-            ([.libraries[] | select(.lang == "php") | {(.package): "*"}] | add)
-          ),
-          "config": {
-            "optimize-autoloader": true,
-            "sort-packages": true
-          }
-        }
-      ' leb.config.json)
+    # Generate composer.json from leb.config.json
+    bun src/run.ts setup php
 
-      # Check if composer.json needs to be updated
-      if [ ! -f composer.json ] || [ "$(cat composer.json)" != "$COMPOSER_GENERATED" ]; then
-        echo "Generating composer.json from leb.config.json..."
-        echo "$COMPOSER_GENERATED" > composer.json
-      fi
-    fi
-
-    # Auto-install dependencies if composer.json exists
+    # Auto-install dependencies if vendor doesn't exist
     if [ -f composer.json ] && [ ! -d vendor ]; then
       echo "Installing PHP dependencies..."
       composer install --quiet
