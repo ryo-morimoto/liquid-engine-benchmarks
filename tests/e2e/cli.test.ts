@@ -56,9 +56,9 @@ describe("E2E: CLI Interface", () => {
     const { stdout, exitCode } = await runCli(["--help"]);
 
     expect(exitCode).toBe(0);
-    expect(stdout).toContain("Liquid Engine Benchmark Runner");
-    expect(stdout).toContain("--adapter");
-    expect(stdout).toContain("--template");
+    expect(stdout).toContain("Liquid Engine Benchmark CLI");
+    expect(stdout).toContain("bench");
+    expect(stdout).toContain("setup");
   });
 
   test("shows help with -h flag", async () => {
@@ -68,15 +68,33 @@ describe("E2E: CLI Interface", () => {
     expect(stdout).toContain("Usage:");
   });
 
+  test("shows bench help", async () => {
+    const { stdout, exitCode } = await runCli(["bench", "--help"]);
+
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain("Benchmark Command");
+    expect(stdout).toContain("--adapter");
+    expect(stdout).toContain("--template");
+  });
+
+  test("shows setup help", async () => {
+    const { stdout, exitCode } = await runCli(["setup", "--help"]);
+
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain("Setup Command");
+    expect(stdout).toContain("php");
+    expect(stdout).toContain("ruby");
+  });
+
   test("errors on missing --adapter", async () => {
-    const { stderr, exitCode } = await runCli(["--template", "primitive/variable"]);
+    const { stderr, exitCode } = await runCli(["bench", "--template", "primitive/variable"]);
 
     expect(exitCode).toBe(1);
     expect(stderr).toContain("--adapter is required");
   });
 
   test("errors on missing --template", async () => {
-    const { stderr, exitCode } = await runCli(["--adapter", "keepsuit"]);
+    const { stderr, exitCode } = await runCli(["bench", "--adapter", "keepsuit"]);
 
     expect(exitCode).toBe(1);
     expect(stderr).toContain("--template is required");
@@ -84,6 +102,7 @@ describe("E2E: CLI Interface", () => {
 
   test("errors on unknown adapter", async () => {
     const { stderr, exitCode } = await runCli([
+      "bench",
       "--adapter",
       "nonexistent",
       "--template",
@@ -96,6 +115,7 @@ describe("E2E: CLI Interface", () => {
 
   test("errors on invalid scale", async () => {
     const { stderr, exitCode } = await runCli([
+      "bench",
       "--adapter",
       "keepsuit",
       "--template",
@@ -110,6 +130,7 @@ describe("E2E: CLI Interface", () => {
 
   test("errors on invalid iterations", async () => {
     const { stderr, exitCode } = await runCli([
+      "bench",
       "--adapter",
       "keepsuit",
       "--template",
@@ -136,6 +157,7 @@ describe("E2E: Full Benchmark Run", () => {
       }
 
       const { stdout, stderr, exitCode } = await runCli([
+        "bench",
         "--adapter",
         "keepsuit",
         "--template",
@@ -197,6 +219,7 @@ describe("E2E: Full Benchmark Run", () => {
       }
 
       const { stdout, stderr, exitCode } = await runCli([
+        "bench",
         "--adapter",
         "shopify",
         "--template",
@@ -236,6 +259,7 @@ describe("E2E: Full Benchmark Run", () => {
       const outputPath = join(__dirname, "../../tmp-test-output.json");
 
       const { stderr, exitCode } = await runCli([
+        "bench",
         "--adapter",
         "keepsuit",
         "--template",
@@ -288,6 +312,7 @@ describe("E2E: Different Templates", () => {
       }
 
       const { stdout, exitCode } = await runCli([
+        "bench",
         "--adapter",
         "keepsuit",
         "--template",
@@ -315,6 +340,7 @@ describe("E2E: Different Templates", () => {
 
   test("errors on nonexistent template", async () => {
     const { stderr, exitCode } = await runCli([
+      "bench",
       "--adapter",
       "keepsuit",
       "--template",
@@ -323,5 +349,79 @@ describe("E2E: Different Templates", () => {
 
     expect(exitCode).toBe(1);
     expect(stderr).toContain("Error");
+  });
+});
+
+describe("E2E: Setup Command", () => {
+  const PROJECT_ROOT = join(__dirname, "../..");
+  const COMPOSER_JSON = join(PROJECT_ROOT, "composer.json");
+  const GEMFILE = join(PROJECT_ROOT, "Gemfile");
+
+  test("setup php generates composer.json", async () => {
+    const { stdout, exitCode } = await runCli(["setup", "php"]);
+
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain("composer.json");
+    expect(stdout).toContain("Setup complete");
+
+    // Verify file exists and has valid content
+    const file = Bun.file(COMPOSER_JSON);
+    expect(await file.exists()).toBe(true);
+
+    const content = await file.json();
+    expect(content.name).toBe("liquid-engine-benchmarks/adapters");
+    expect(content.require).toBeDefined();
+    expect(content.require.php).toMatch(/^>=\d+\.\d+$/);
+    expect(content.require["keepsuit/liquid"]).toBeDefined();
+    expect(content.require["liquid/liquid"]).toBeDefined();
+  });
+
+  test("setup ruby generates Gemfile", async () => {
+    const { stdout, exitCode } = await runCli(["setup", "ruby"]);
+
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain("Gemfile");
+    expect(stdout).toContain("Setup complete");
+
+    // Verify file exists and has valid content
+    const file = Bun.file(GEMFILE);
+    expect(await file.exists()).toBe(true);
+
+    const content = await file.text();
+    expect(content).toContain("frozen_string_literal: true");
+    expect(content).toContain('source "https://rubygems.org"');
+    expect(content).toContain('gem "liquid"');
+  });
+
+  test("setup all generates both files", async () => {
+    const { stdout, exitCode } = await runCli(["setup", "all"]);
+
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain("composer.json");
+    expect(stdout).toContain("Gemfile");
+    expect(stdout).toContain("Setup complete");
+
+    // Verify both files exist
+    expect(await Bun.file(COMPOSER_JSON).exists()).toBe(true);
+    expect(await Bun.file(GEMFILE).exists()).toBe(true);
+  });
+
+  test("setup is idempotent", async () => {
+    // Run setup twice
+    const first = await runCli(["setup", "all"]);
+    const second = await runCli(["setup", "all"]);
+
+    expect(first.exitCode).toBe(0);
+    expect(second.exitCode).toBe(0);
+
+    // Second run should report files are up to date
+    expect(second.stdout).toContain("up to date");
+  });
+
+  test("setup errors on invalid target", async () => {
+    const { stderr, exitCode } = await runCli(["setup", "invalid"]);
+
+    expect(exitCode).toBe(1);
+    expect(stderr).toContain("Invalid target");
   });
 });

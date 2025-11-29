@@ -1,0 +1,67 @@
+/**
+ * Configuration Loader
+ *
+ * Loads and validates leb.config.json from project root.
+ */
+
+import type { ConfigLang, LebConfig, LibraryConfig } from "./types";
+
+const CONFIG_FILE = "leb.config.json";
+
+/**
+ * Load leb.config.json from project root.
+ * @returns Parsed configuration object
+ * @throws Error if file not found or invalid JSON
+ */
+export async function loadConfig(): Promise<LebConfig> {
+  const file = Bun.file(CONFIG_FILE);
+  const exists = await file.exists();
+
+  if (!exists) {
+    throw new Error(`Configuration file not found: ${CONFIG_FILE}`);
+  }
+
+  const content = await file.text();
+  const config = JSON.parse(content) as LebConfig;
+
+  validateConfig(config);
+
+  return config;
+}
+
+/**
+ * Validate configuration structure.
+ * @throws Error if configuration is invalid
+ */
+function validateConfig(config: LebConfig): void {
+  if (!config.runtimes) {
+    throw new Error("Missing 'runtimes' in configuration");
+  }
+
+  if (!config.libraries || !Array.isArray(config.libraries)) {
+    throw new Error("Missing or invalid 'libraries' in configuration");
+  }
+}
+
+/**
+ * Filter libraries by programming language.
+ * @param libraries - Array of library configurations
+ * @param lang - Target language to filter by
+ * @returns Libraries matching the specified language
+ */
+export function filterLibrariesByLang(
+  libraries: LibraryConfig[],
+  lang: ConfigLang
+): LibraryConfig[] {
+  return libraries.filter((lib) => lib.lang === lang);
+}
+
+/**
+ * Get runtime version for a specific language.
+ * @param config - Configuration object
+ * @param lang - Target language
+ * @returns Version string (e.g., "8.3" for PHP, "3.3" for Ruby)
+ */
+export function getRuntimeVersion(config: LebConfig, lang: ConfigLang): string {
+  return config.runtimes[lang];
+}

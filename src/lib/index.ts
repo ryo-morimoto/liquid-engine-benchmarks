@@ -5,6 +5,18 @@
  * Consumers should import from this index file or specific sub-modules.
  */
 
+// Config module
+export {
+  filterLibrariesByLang,
+  getRuntimeVersion,
+  loadConfig,
+  type BaselineConfig,
+  type ConfigLang,
+  type LebConfig,
+  type LibraryConfig,
+  type RuntimeConfig,
+} from "./config";
+
 // Adapter module
 export {
   ADAPTERS,
