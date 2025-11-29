@@ -5,10 +5,10 @@
  * Each command follows Unix philosophy: do one thing well.
  */
 
-import { run as benchRun, printHelp as benchHelp } from "./bench";
-import { run as listRun, printHelp as listHelp } from "./list";
-import { run as prepareRun, printHelp as prepareHelp } from "./prepare";
-import { run as setupRun, printHelp as setupHelp } from "./setup";
+import { printHelp as benchHelp, run as benchRun } from "./bench";
+import { printHelp as listHelp, run as listRun } from "./list";
+import { printHelp as prepareHelp, run as prepareRun } from "./prepare";
+import { printHelp as setupHelp, run as setupRun } from "./setup";
 
 export const bench = { run: benchRun, printHelp: benchHelp };
 export const list = { run: listRun, printHelp: listHelp };

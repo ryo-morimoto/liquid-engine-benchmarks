@@ -2,15 +2,13 @@
   "name": "liquid-engine-benchmarks",
   "type": "module",
   "scripts": {
+    "prepare": "bun src/run.ts prepare",
     "format": "biome format --write .",
     "format:check": "biome format .",
     "lint": "biome lint .",
     "lint:fix": "biome lint --write .",
     "lint:strict": "eslint .",
-    "check": "biome check --write . && eslint .",
-    "generate:schema": "bun scripts/generate-schema.ts",
-    "validate:bench": "bun scripts/validate-schema.ts schema/bench.schema.json bench.json",
-    "validate:result": "bun scripts/validate-schema.ts schema/result.schema.json"
+    "check": "biome check --write . && eslint ."
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.8",

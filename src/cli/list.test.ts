@@ -5,7 +5,7 @@
  * The list command outputs adapters or scenarios for shell composition.
  */
 
-import { describe, expect, test, spyOn, beforeEach, afterEach } from "bun:test";
+import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { parseArgs_ } from "./list";
 
 describe("parseArgs_", () => {

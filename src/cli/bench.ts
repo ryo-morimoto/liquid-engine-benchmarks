@@ -14,11 +14,11 @@ import { parseArgs } from "node:util";
 import {
   adapterExists,
   addArrays,
-  calculateMetrics,
   CliError,
+  calculateMetrics,
   createScenarioLoader,
-  ensureAdapterReady,
   Errors,
+  ensureAdapterReady,
   getExcludedScenarios,
   listAdapters,
   loadConfig,
@@ -29,9 +29,9 @@ import {
 } from "../lib";
 import {
   ADAPTER_NAMES,
+  type AdapterName,
   isScale,
   SCALES,
-  type AdapterName,
   type Scale,
   type TimingMetrics,
 } from "../types";
@@ -310,10 +310,11 @@ function calculateTimingMetrics(parseMs: number[], renderMs: number[]): TimingMe
 
 /**
  * Output error in appropriate format.
+ * Always outputs to stderr as errors should never go to stdout.
  */
 function outputError(error: CliError, format: OutputFormat): void {
   if (format === "json") {
-    console.log(JSON.stringify(error.toJSON(), null, 2));
+    console.error(JSON.stringify(error.toJSON(), null, 2));
   } else {
     console.error(error.toHuman());
   }
@@ -698,21 +699,33 @@ async function runSingle(options: SingleBenchOptions): Promise<void> {
       console.log(outputJson);
     }
   } else {
-    // Table format for single benchmark
+    // Table format for single benchmark using Unicode box drawing
     if (!result.metrics) return;
     const metrics = result.metrics;
+    const width = 50;
+    const row = (text: string) => `│${text.padEnd(width)}│`;
+    const hr = "─".repeat(width);
+
     console.log("");
-    console.log(`${options.adapter} × ${options.scenario}`);
-    console.log("-".repeat(50));
+    console.log(`┌${hr}┐`);
+    console.log(row(` ${options.adapter} × ${options.scenario}`));
+    console.log(`├${hr}┤`);
     console.log(
-      `  Parse:  ${formatTime(metrics.parse.mean_ms)} (±${formatTime(metrics.parse.stddev_ms)})`
+      row(
+        `   Parse:  ${formatTime(metrics.parse.mean_ms)} (±${formatTime(metrics.parse.stddev_ms)})`
+      )
     );
     console.log(
-      `  Render: ${formatTime(metrics.render.mean_ms)} (±${formatTime(metrics.render.stddev_ms)})`
+      row(
+        `   Render: ${formatTime(metrics.render.mean_ms)} (±${formatTime(metrics.render.stddev_ms)})`
+      )
     );
     console.log(
-      `  Total:  ${formatTime(metrics.total.mean_ms)} (±${formatTime(metrics.total.stddev_ms)})`
+      row(
+        `   Total:  ${formatTime(metrics.total.mean_ms)} (±${formatTime(metrics.total.stddev_ms)})`
+      )
     );
+    console.log(`└${hr}┘`);
     console.log("");
   }
 }

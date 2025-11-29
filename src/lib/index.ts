@@ -5,47 +5,65 @@
  * Consumers should import from this index file or specific sub-modules.
  */
 
-// Config module
+// Data module (re-exported from src/db)
 export {
-  filterLibrariesByLang,
-  getExcludedScenarios,
-  getLibraryConfig,
-  getRuntimeVersion,
-  loadConfig,
-  type BaselineConfig,
-  type ConfigLang,
-  type LebConfig,
-  type LibraryConfig,
-  type RuntimeConfig,
-  type ScenarioExclusion,
-} from "./config";
+  type BenchmarkData,
+  type CartItem,
+  type Collection,
+  DataLoader,
+  type Image,
+  loadData,
+  type Post,
+  type Product,
+  SCALE_LIMITS,
+  type User,
+  type Variant,
+} from "../db";
 
 // Adapter module
 export {
   ADAPTERS,
   AdapterError,
+  type AdapterResult,
   adapterExists,
   getAdapterConfig,
   listAdapters,
   runAdapter,
-  type AdapterResult,
 } from "./adapter";
-
-// Data module (re-exported from src/db)
+// Config module
 export {
-  DataLoader,
-  loadData,
-  SCALE_LIMITS,
-  type BenchmarkData,
-  type CartItem,
-  type Collection,
-  type Image,
-  type Post,
-  type Product,
-  type User,
-  type Variant,
-} from "../db";
-
+  type BaselineConfig,
+  type ConfigLang,
+  filterLibrariesByLang,
+  getExcludedScenarios,
+  getLibraryConfig,
+  getRuntimeVersion,
+  type LebConfig,
+  type LibraryConfig,
+  loadConfig,
+  type RuntimeConfig,
+  type ScenarioExclusion,
+} from "./config";
+// Environment check module
+export {
+  type CheckResult,
+  checkAdapter,
+  checkAdapters,
+  checkAllAdapters,
+  ensureAdapterReady,
+} from "./env-check";
+// Errors module
+export { CliError, type CliErrorDetails, ErrorCode, Errors } from "./errors";
+// Scenario module
+export {
+  createScenarioLoader,
+  isScenarioCategory,
+  loadScenario,
+  loadScenarios,
+  type ScenarioCategory,
+  type ScenarioInfo,
+  ScenarioLoader,
+} from "./scenario";
 // Stats module
 export {
   addArrays,
@@ -56,37 +74,13 @@ export {
   min,
   stddev,
 } from "./stats";
-
-// Scenario module
-export {
-  createScenarioLoader,
-  isScenarioCategory,
-  loadScenario,
-  loadScenarios,
-  ScenarioLoader,
-  type ScenarioCategory,
-  type ScenarioInfo,
-} from "./scenario";
-
 // Validator module
 export {
   formatErrors,
   isValidAdapterInput,
   isValidAdapterOutput,
+  type ValidationResult,
   validateAdapterInput,
   validateAdapterOutput,
   validateWithDetails,
-  type ValidationResult,
 } from "./validator";
-
-// Errors module
-export { CliError, ErrorCode, Errors, type CliErrorDetails } from "./errors";
-
-// Environment check module
-export {
-  checkAdapter,
-  checkAdapters,
-  checkAllAdapters,
-  ensureAdapterReady,
-  type CheckResult,
-} from "./env-check";

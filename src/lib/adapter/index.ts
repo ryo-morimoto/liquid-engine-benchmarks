@@ -7,9 +7,9 @@
 export {
   ADAPTERS,
   AdapterError,
+  type AdapterResult,
   adapterExists,
   getAdapterConfig,
   listAdapters,
   runAdapter,
-  type AdapterResult,
 } from "./runner";

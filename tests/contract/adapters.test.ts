@@ -12,8 +12,8 @@
 
 import { beforeAll, describe, expect, test } from "bun:test";
 import {
-  AdapterError,
   ADAPTERS,
+  AdapterError,
   isValidAdapterOutput,
   listAdapters,
   runAdapter,
@@ -100,7 +100,7 @@ describe("Adapter Contract Tests", () => {
         const result = await runAdapter(adapterName, TEST_INPUT, 60_000);
 
         // Validate against schema
-        expect(isValidAdapterOutput(result.output)).toBe(true);
+        expect(await isValidAdapterOutput(result.output)).toBe(true);
       });
     }
   });
@@ -210,7 +210,7 @@ describe("Adapter Contract Tests", () => {
         try {
           const result = await runAdapter(adapterName, invalidInput, 30_000);
           // If it succeeds, output should still be valid
-          expect(isValidAdapterOutput(result.output)).toBe(true);
+          expect(await isValidAdapterOutput(result.output)).toBe(true);
         } catch (error) {
           // Expected for strict-mode adapters
           expect(error).toBeDefined();

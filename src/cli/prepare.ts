@@ -1,14 +1,16 @@
 /**
  * Prepare CLI Command
  *
- * Seeds the benchmark database with test data.
- * Uses a fixed seed for reproducible data generation.
+ * Prepares the project for use:
+ * 1. Generates JSON Schema files from TypeScript types
+ * 2. Seeds the benchmark database with test data
  *
  * Usage:
  *   leb prepare
  */
 
 import { join } from "node:path";
+import { generateSchemas } from "../lib/json-schema/generator";
 
 const SEED_SCRIPT = join(import.meta.dir, "../db/seed.ts");
 
@@ -19,19 +21,23 @@ export function printHelp(): void {
   console.log(`
 Prepare Command
 
-Seeds the benchmark database with test data.
-Uses a fixed seed (42) for reproducible data generation.
+Prepares the project for use:
+1. Generates JSON Schema files (dist/schema/)
+2. Seeds the benchmark database (data/benchmark.db)
 
 Usage:
   leb prepare
 
 Output:
+  dist/schema/*.schema.json
   data/benchmark.db
 `);
 }
 
 /**
- * Run prepare command - seeds the benchmark database.
+ * Run prepare command.
+ * Generates schemas and seeds the benchmark database.
+ *
  * @param args - CLI arguments (after 'prepare' subcommand)
  */
 export async function run(args: string[]): Promise<void> {
@@ -40,6 +46,10 @@ export async function run(args: string[]): Promise<void> {
     return;
   }
 
+  // Step 1: Generate JSON Schemas
+  await generateSchemas();
+
+  // Step 2: Seed database
   const result = await Bun.$`bun ${SEED_SCRIPT}`.quiet();
   console.log(result.text());
 

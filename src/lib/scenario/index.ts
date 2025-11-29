@@ -9,7 +9,7 @@ export {
   isScenarioCategory,
   loadScenario,
   loadScenarios,
-  ScenarioLoader,
   type ScenarioCategory,
   type ScenarioInfo,
+  ScenarioLoader,
 } from "./loader";

@@ -16,11 +16,11 @@
 
 import { join } from "node:path";
 import {
+  type ConfigLang,
   filterLibrariesByLang,
   getRuntimeVersion,
-  loadConfig,
-  type ConfigLang,
   type LebConfig,
+  loadConfig,
 } from "../lib";
 
 /**

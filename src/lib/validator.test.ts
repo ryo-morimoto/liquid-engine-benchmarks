@@ -1,5 +1,8 @@
 /**
  * Unit tests for validator
+ *
+ * Tests JSON Schema validation for adapter input/output.
+ * Validation functions are async due to lazy schema loading.
  */
 
 import { describe, expect, test } from "bun:test";
@@ -12,7 +15,7 @@ import {
 } from "./validator";
 
 describe("validateAdapterInput", () => {
-  test("accepts valid input", () => {
+  test("accepts valid input", async () => {
     const input = {
       template: "{{ name }}",
       data: { name: "Alice" },
@@ -20,10 +23,11 @@ describe("validateAdapterInput", () => {
       warmup: 10,
     };
 
-    expect(() => validateAdapterInput(input)).not.toThrow();
+    const result = await validateAdapterInput(input);
+    expect(result).toEqual(input);
   });
 
-  test("accepts empty data object", () => {
+  test("accepts empty data object", async () => {
     const input = {
       template: "Hello",
       data: {},
@@ -31,20 +35,27 @@ describe("validateAdapterInput", () => {
       warmup: 0,
     };
 
-    expect(() => validateAdapterInput(input)).not.toThrow();
+    const result = await validateAdapterInput(input);
+    expect(result).toEqual(input);
   });
 
-  test("rejects missing template", () => {
+  test("rejects missing template", async () => {
     const input = {
       data: {},
       iterations: 100,
       warmup: 10,
     };
 
-    expect(() => validateAdapterInput(input)).toThrow("Invalid AdapterInput");
+    try {
+      await validateAdapterInput(input);
+      expect.unreachable("Should have thrown");
+    } catch (error) {
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error).message).toContain("Invalid AdapterInput");
+    }
   });
 
-  test("rejects empty template", () => {
+  test("rejects empty template", async () => {
     const input = {
       template: "",
       data: {},
@@ -52,10 +63,16 @@ describe("validateAdapterInput", () => {
       warmup: 10,
     };
 
-    expect(() => validateAdapterInput(input)).toThrow("Invalid AdapterInput");
+    try {
+      await validateAdapterInput(input);
+      expect.unreachable("Should have thrown");
+    } catch (error) {
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error).message).toContain("Invalid AdapterInput");
+    }
   });
 
-  test("rejects iterations below minimum", () => {
+  test("rejects iterations below minimum", async () => {
     const input = {
       template: "{{ name }}",
       data: {},
@@ -63,10 +80,16 @@ describe("validateAdapterInput", () => {
       warmup: 10,
     };
 
-    expect(() => validateAdapterInput(input)).toThrow("Invalid AdapterInput");
+    try {
+      await validateAdapterInput(input);
+      expect.unreachable("Should have thrown");
+    } catch (error) {
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error).message).toContain("Invalid AdapterInput");
+    }
   });
 
-  test("rejects iterations above maximum", () => {
+  test("rejects iterations above maximum", async () => {
     const input = {
       template: "{{ name }}",
       data: {},
@@ -74,10 +97,16 @@ describe("validateAdapterInput", () => {
       warmup: 10,
     };
 
-    expect(() => validateAdapterInput(input)).toThrow("Invalid AdapterInput");
+    try {
+      await validateAdapterInput(input);
+      expect.unreachable("Should have thrown");
+    } catch (error) {
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error).message).toContain("Invalid AdapterInput");
+    }
   });
 
-  test("rejects negative warmup", () => {
+  test("rejects negative warmup", async () => {
     const input = {
       template: "{{ name }}",
       data: {},
@@ -85,10 +114,16 @@ describe("validateAdapterInput", () => {
       warmup: -1,
     };
 
-    expect(() => validateAdapterInput(input)).toThrow("Invalid AdapterInput");
+    try {
+      await validateAdapterInput(input);
+      expect.unreachable("Should have thrown");
+    } catch (error) {
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error).message).toContain("Invalid AdapterInput");
+    }
   });
 
-  test("rejects additional properties", () => {
+  test("rejects additional properties", async () => {
     const input = {
       template: "{{ name }}",
       data: {},
@@ -97,12 +132,18 @@ describe("validateAdapterInput", () => {
       extra: "not allowed",
     };
 
-    expect(() => validateAdapterInput(input)).toThrow("Invalid AdapterInput");
+    try {
+      await validateAdapterInput(input);
+      expect.unreachable("Should have thrown");
+    } catch (error) {
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error).message).toContain("Invalid AdapterInput");
+    }
   });
 });
 
 describe("validateAdapterOutput", () => {
-  test("accepts valid output", () => {
+  test("accepts valid output", async () => {
     const output = {
       library: "keepsuit/php-liquid",
       version: "0.10.0",
@@ -113,10 +154,11 @@ describe("validateAdapterOutput", () => {
       },
     };
 
-    expect(() => validateAdapterOutput(output)).not.toThrow();
+    const result = await validateAdapterOutput(output);
+    expect(result).toEqual(output);
   });
 
-  test("accepts output with runtime_version", () => {
+  test("accepts output with runtime_version", async () => {
     const output = {
       library: "shopify/liquid",
       version: "5.6.0",
@@ -128,10 +170,11 @@ describe("validateAdapterOutput", () => {
       },
     };
 
-    expect(() => validateAdapterOutput(output)).not.toThrow();
+    const result = await validateAdapterOutput(output);
+    expect(result).toEqual(output);
   });
 
-  test("rejects invalid semver", () => {
+  test("rejects invalid semver", async () => {
     const output = {
       library: "keepsuit/php-liquid",
       version: "1.0", // invalid: missing patch
@@ -142,10 +185,16 @@ describe("validateAdapterOutput", () => {
       },
     };
 
-    expect(() => validateAdapterOutput(output)).toThrow("Invalid AdapterOutput");
+    try {
+      await validateAdapterOutput(output);
+      expect.unreachable("Should have thrown");
+    } catch (error) {
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error).message).toContain("Invalid AdapterOutput");
+    }
   });
 
-  test("rejects invalid lang", () => {
+  test("rejects invalid lang", async () => {
     const output = {
       library: "some/lib",
       version: "1.0.0",
@@ -156,10 +205,16 @@ describe("validateAdapterOutput", () => {
       },
     };
 
-    expect(() => validateAdapterOutput(output)).toThrow("Invalid AdapterOutput");
+    try {
+      await validateAdapterOutput(output);
+      expect.unreachable("Should have thrown");
+    } catch (error) {
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error).message).toContain("Invalid AdapterOutput");
+    }
   });
 
-  test("rejects empty timings arrays", () => {
+  test("rejects empty timings arrays", async () => {
     const output = {
       library: "keepsuit/php-liquid",
       version: "0.10.0",
@@ -170,10 +225,16 @@ describe("validateAdapterOutput", () => {
       },
     };
 
-    expect(() => validateAdapterOutput(output)).toThrow("Invalid AdapterOutput");
+    try {
+      await validateAdapterOutput(output);
+      expect.unreachable("Should have thrown");
+    } catch (error) {
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error).message).toContain("Invalid AdapterOutput");
+    }
   });
 
-  test("rejects negative timing values", () => {
+  test("rejects negative timing values", async () => {
     const output = {
       library: "keepsuit/php-liquid",
       version: "0.10.0",
@@ -184,22 +245,34 @@ describe("validateAdapterOutput", () => {
       },
     };
 
-    expect(() => validateAdapterOutput(output)).toThrow("Invalid AdapterOutput");
+    try {
+      await validateAdapterOutput(output);
+      expect.unreachable("Should have thrown");
+    } catch (error) {
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error).message).toContain("Invalid AdapterOutput");
+    }
   });
 
-  test("rejects missing timings", () => {
+  test("rejects missing timings", async () => {
     const output = {
       library: "keepsuit/php-liquid",
       version: "0.10.0",
       lang: "php",
     };
 
-    expect(() => validateAdapterOutput(output)).toThrow("Invalid AdapterOutput");
+    try {
+      await validateAdapterOutput(output);
+      expect.unreachable("Should have thrown");
+    } catch (error) {
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error).message).toContain("Invalid AdapterOutput");
+    }
   });
 });
 
 describe("isValidAdapterInput", () => {
-  test("returns true for valid input", () => {
+  test("returns true for valid input", async () => {
     const input = {
       template: "{{ name }}",
       data: {},
@@ -207,10 +280,10 @@ describe("isValidAdapterInput", () => {
       warmup: 10,
     };
 
-    expect(isValidAdapterInput(input)).toBe(true);
+    expect(await isValidAdapterInput(input)).toBe(true);
   });
 
-  test("returns false for invalid input", () => {
+  test("returns false for invalid input", async () => {
     const input = {
       template: "",
       data: {},
@@ -218,12 +291,12 @@ describe("isValidAdapterInput", () => {
       warmup: 10,
     };
 
-    expect(isValidAdapterInput(input)).toBe(false);
+    expect(await isValidAdapterInput(input)).toBe(false);
   });
 });
 
 describe("isValidAdapterOutput", () => {
-  test("returns true for valid output", () => {
+  test("returns true for valid output", async () => {
     const output = {
       library: "keepsuit/php-liquid",
       version: "0.10.0",
@@ -234,10 +307,10 @@ describe("isValidAdapterOutput", () => {
       },
     };
 
-    expect(isValidAdapterOutput(output)).toBe(true);
+    expect(await isValidAdapterOutput(output)).toBe(true);
   });
 
-  test("returns false for invalid output", () => {
+  test("returns false for invalid output", async () => {
     const output = {
       library: "keepsuit/php-liquid",
       version: "invalid",
@@ -248,7 +321,7 @@ describe("isValidAdapterOutput", () => {
       },
     };
 
-    expect(isValidAdapterOutput(output)).toBe(false);
+    expect(await isValidAdapterOutput(output)).toBe(false);
   });
 });
 

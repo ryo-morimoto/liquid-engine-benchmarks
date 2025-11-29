@@ -3,21 +3,55 @@
  *
  * Validates JSON data against schemas using Ajv.
  * Ensures adapter input/output consistency.
+ *
+ * Schemas are loaded lazily to allow CLI to run before schema generation.
  */
 
+import { join } from "node:path";
 import Ajv from "ajv";
 import addFormats from "ajv-formats";
-import adapterInputSchema from "../../dist/schema/adapter-input.schema.json";
-import adapterOutputSchema from "../../dist/schema/adapter-output.schema.json";
-import lebConfigSchema from "../../dist/schema/leb.config.schema.json";
-import resultSchema from "../../dist/schema/result.schema.json";
 import type { AdapterInput, AdapterOutput } from "../types";
 
+/** Schema directory path */
+const SCHEMA_DIR = join(import.meta.dir, "../../dist/schema");
+
+/** Schema file names */
+const SCHEMA_FILES = [
+  "adapter-input.schema.json",
+  "adapter-output.schema.json",
+  "leb.config.schema.json",
+  "result.schema.json",
+] as const;
+
+/** Cached Ajv instance (lazy-loaded) */
+let ajvInstance: Ajv | null = null;
+
 /**
- * Create an Ajv instance with all schemas registered.
+ * Load a JSON schema file.
+ * Throws if the schema file doesn't exist.
+ */
+async function loadSchema(filename: string): Promise<object> {
+  const path = join(SCHEMA_DIR, filename);
+  const file = Bun.file(path);
+
+  if (!(await file.exists())) {
+    throw new Error(
+      `Schema file not found: ${path}\nRun 'bun src/run.ts prepare' to generate schemas.`
+    );
+  }
+
+  return file.json();
+}
+
+/**
+ * Get the Ajv instance, loading schemas lazily on first call.
  * Schemas are generated from TypeScript types via ts-json-schema-generator.
  */
-function createAjv(): Ajv {
+async function getAjv(): Promise<Ajv> {
+  if (ajvInstance) {
+    return ajvInstance;
+  }
+
   const ajv = new Ajv({
     allErrors: true,
     strict: true,
@@ -25,17 +59,15 @@ function createAjv(): Ajv {
   });
   addFormats(ajv);
 
-  // Register schemas for $ref resolution
-  ajv.addSchema(adapterInputSchema);
-  ajv.addSchema(adapterOutputSchema);
-  ajv.addSchema(lebConfigSchema);
-  ajv.addSchema(resultSchema);
+  // Load and register all schemas
+  for (const file of SCHEMA_FILES) {
+    const schema = await loadSchema(file);
+    ajv.addSchema(schema);
+  }
 
+  ajvInstance = ajv;
   return ajv;
 }
-
-// Singleton Ajv instance
-const ajv = createAjv();
 
 /**
  * Format validation errors into a readable string.
@@ -55,7 +87,8 @@ export function formatErrors(errors: Ajv["errors"]): string {
  * Validate AdapterInput.
  * Throws if invalid.
  */
-export function validateAdapterInput(data: unknown): asserts data is AdapterInput {
+export async function validateAdapterInput(data: unknown): Promise<AdapterInput> {
+  const ajv = await getAjv();
   const validate = ajv.getSchema<AdapterInput>(
     "https://github.com/ryo-morimoto/liquid-engine-benchmarks/schema/adapter-input.schema.json"
   );
@@ -67,13 +100,16 @@ export function validateAdapterInput(data: unknown): asserts data is AdapterInpu
   if (!validate(data)) {
     throw new Error(`Invalid AdapterInput:\n${formatErrors(validate.errors)}`);
   }
+
+  return data;
 }
 
 /**
  * Validate AdapterOutput.
  * Throws if invalid.
  */
-export function validateAdapterOutput(data: unknown): asserts data is AdapterOutput {
+export async function validateAdapterOutput(data: unknown): Promise<AdapterOutput> {
+  const ajv = await getAjv();
   const validate = ajv.getSchema<AdapterOutput>(
     "https://github.com/ryo-morimoto/liquid-engine-benchmarks/schema/adapter-output.schema.json"
   );
@@ -85,14 +121,16 @@ export function validateAdapterOutput(data: unknown): asserts data is AdapterOut
   if (!validate(data)) {
     throw new Error(`Invalid AdapterOutput:\n${formatErrors(validate.errors)}`);
   }
+
+  return data;
 }
 
 /**
  * Validate AdapterInput (returns boolean).
  */
-export function isValidAdapterInput(data: unknown): data is AdapterInput {
+export async function isValidAdapterInput(data: unknown): Promise<boolean> {
   try {
-    validateAdapterInput(data);
+    await validateAdapterInput(data);
     return true;
   } catch {
     return false;
@@ -102,9 +140,9 @@ export function isValidAdapterInput(data: unknown): data is AdapterInput {
 /**
  * Validate AdapterOutput (returns boolean).
  */
-export function isValidAdapterOutput(data: unknown): data is AdapterOutput {
+export async function isValidAdapterOutput(data: unknown): Promise<boolean> {
   try {
-    validateAdapterOutput(data);
+    await validateAdapterOutput(data);
     return true;
   } catch {
     return false;
@@ -122,7 +160,11 @@ export interface ValidationResult {
 /**
  * Validate data against a schema and return detailed results.
  */
-export function validateWithDetails(schemaId: string, data: unknown): ValidationResult {
+export async function validateWithDetails(
+  schemaId: string,
+  data: unknown
+): Promise<ValidationResult> {
+  const ajv = await getAjv();
   const validate = ajv.getSchema(schemaId);
 
   if (!validate) {
@@ -131,7 +173,6 @@ export function validateWithDetails(schemaId: string, data: unknown): Validation
 
   const valid = validate(data);
 
-  // Return early for valid case to satisfy exactOptionalPropertyTypes
   if (valid) {
     return { valid: true };
   }

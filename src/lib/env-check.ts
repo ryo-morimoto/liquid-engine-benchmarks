@@ -13,7 +13,7 @@
 import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { type AdapterName, ADAPTER_NAMES, type RuntimeName } from "../types";
+import { ADAPTER_NAMES, type AdapterName, type RuntimeName } from "../types";
 import { type CliError, Errors } from "./errors";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));

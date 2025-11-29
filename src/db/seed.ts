@@ -6,10 +6,10 @@
  */
 
 import { Database } from "bun:sqlite";
-import { faker } from "@faker-js/faker";
 import { existsSync, unlinkSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { faker } from "@faker-js/faker";
 import { DDL } from "./schema";
 
 faker.seed(42);

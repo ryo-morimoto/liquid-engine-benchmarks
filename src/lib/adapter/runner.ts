@@ -10,11 +10,11 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   ADAPTER_NAMES,
-  isAdapterName,
   type AdapterConfig,
   type AdapterInput,
   type AdapterName,
   type AdapterOutput,
+  isAdapterName,
 } from "../../types";
 import { validateAdapterOutput } from "../validator";
 
@@ -174,7 +174,7 @@ export async function runAdapter(
 
   // Validate against schema
   try {
-    validateAdapterOutput(output);
+    await validateAdapterOutput(output);
   } catch (e) {
     throw new AdapterError(
       `Adapter output validation failed: ${e instanceof Error ? e.message : String(e)}`,

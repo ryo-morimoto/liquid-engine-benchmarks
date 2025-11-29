@@ -5,24 +5,38 @@
  * Consumers should import from this index file.
  */
 
-// Constants and type guards
-export {
-  ADAPTER_NAMES,
-  LANGS,
-  RUNTIME_NAMES,
-  SCALES,
-  isAdapterName,
-  isLang,
-  isScale,
-  type AdapterName,
-  type Lang,
-  type RuntimeName,
-  type Scale,
-} from "./constants";
+// Benchmark configuration and result types
+export type {
+  BaselineConfig,
+  BenchmarkEntry,
+  BenchmarkMeta,
+  BenchmarkResult,
+  LebConfig,
+  LibraryConfig,
+  LibraryName,
+  RunAdapter,
+  RunMetadata,
+  RunResult,
+  RuntimeVersion,
+  ScenarioExclusion,
+} from "./benchmark";
 
 // Configuration types
 export type { AdapterConfig, RunOptions } from "./config";
-
+// Constants and type guards
+export {
+  ADAPTER_NAMES,
+  type AdapterName,
+  isAdapterName,
+  isLang,
+  isScale,
+  LANGS,
+  type Lang,
+  RUNTIME_NAMES,
+  type RuntimeName,
+  SCALES,
+  type Scale,
+} from "./constants";
 // Adapter I/O types
 export type {
   AdapterInput,
@@ -33,19 +47,3 @@ export type {
   TimingMetrics,
   TimingValue,
 } from "./schema";
-
-// Benchmark configuration and result types
-export type {
-  BaselineConfig,
-  LebConfig,
-  BenchmarkEntry,
-  BenchmarkMeta,
-  BenchmarkResult,
-  LibraryConfig,
-  LibraryName,
-  RunAdapter,
-  RunMetadata,
-  RunResult,
-  RuntimeVersion,
-  ScenarioExclusion,
-} from "./benchmark";

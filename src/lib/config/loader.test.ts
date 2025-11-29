@@ -8,9 +8,9 @@ import {
   getExcludedScenarios,
   getLibraryConfig,
   getRuntimeVersion,
-  loadConfig,
   type LebConfig,
   type LibraryConfig,
+  loadConfig,
 } from "./index";
 
 describe("loadConfig", () => {
