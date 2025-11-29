@@ -26,6 +26,17 @@ export interface BaselineConfig {
 }
 
 /**
+ * Scenario exclusion rule.
+ * String excludes for all versions; object excludes for specific version.
+ */
+export type ScenarioExclusion =
+  | string
+  | {
+      scenario: string;
+      version: string;
+    };
+
+/**
  * Library configuration entry.
  */
 export interface LibraryConfig {
@@ -33,6 +44,11 @@ export interface LibraryConfig {
   name: string;
   package: string;
   versions: string[];
+  /**
+   * Scenarios to exclude (not supported by this library).
+   * @example ["unit/tags/extends", { scenario: "unit/filters/sum", libVer: "1.0.0" }]
+   */
+  excludeScenarios?: ScenarioExclusion[];
 }
 
 /**

@@ -65,3 +65,48 @@ export function filterLibrariesByLang(
 export function getRuntimeVersion(config: LebConfig, lang: ConfigLang): string {
   return config.runtimes[lang];
 }
+
+/**
+ * Get library configuration by adapter name.
+ * @param config - Configuration object
+ * @param adapterName - Adapter name (e.g., "keepsuit", "shopify")
+ * @returns Library configuration or undefined if not found
+ */
+export function getLibraryConfig(
+  config: LebConfig,
+  adapterName: string
+): LibraryConfig | undefined {
+  return config.libraries.find((lib) => lib.name === adapterName);
+}
+
+/**
+ * Get excluded scenarios for an adapter and specific library version.
+ * @param config - Configuration object
+ * @param adapterName - Adapter name
+ * @param version - Library version (optional, if not provided returns all exclusions)
+ * @returns Set of excluded scenario paths for efficient lookup
+ */
+export function getExcludedScenarios(
+  config: LebConfig,
+  adapterName: string,
+  version?: string
+): Set<string> {
+  const library = getLibraryConfig(config, adapterName);
+  const exclusions = library?.excludeScenarios ?? [];
+
+  const scenarios = new Set<string>();
+
+  for (const exclusion of exclusions) {
+    if (typeof exclusion === "string") {
+      // String exclusion applies to all versions
+      scenarios.add(exclusion);
+    } else {
+      // Object exclusion: check if version matches
+      if (!version || exclusion.version === version) {
+        scenarios.add(exclusion.scenario);
+      }
+    }
+  }
+
+  return scenarios;
+}

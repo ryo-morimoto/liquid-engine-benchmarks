@@ -5,6 +5,8 @@
 import { describe, expect, test } from "bun:test";
 import {
   filterLibrariesByLang,
+  getExcludedScenarios,
+  getLibraryConfig,
   getRuntimeVersion,
   loadConfig,
   type LebConfig,
@@ -98,5 +100,142 @@ describe("getRuntimeVersion", () => {
     const version = getRuntimeVersion(mockConfig, "ruby");
 
     expect(version).toBe("3.3");
+  });
+});
+
+describe("getLibraryConfig", () => {
+  const mockConfig: LebConfig = {
+    runtimes: { php: "8.3", ruby: "3.3" },
+    baseline: { library: "shopify", version: "5.6.0" },
+    libraries: [
+      { lang: "php", name: "keepsuit", package: "keepsuit/liquid", versions: ["1.0.0"] },
+      { lang: "ruby", name: "shopify", package: "liquid", versions: ["5.5.0"] },
+    ],
+  };
+
+  test("returns library config by name", () => {
+    const lib = getLibraryConfig(mockConfig, "keepsuit");
+
+    expect(lib).toBeDefined();
+    expect(lib?.name).toBe("keepsuit");
+    expect(lib?.lang).toBe("php");
+  });
+
+  test("returns undefined for unknown library", () => {
+    const lib = getLibraryConfig(mockConfig, "unknown");
+
+    expect(lib).toBeUndefined();
+  });
+});
+
+describe("getExcludedScenarios", () => {
+  test("returns empty set when no exclusions defined", () => {
+    const config: LebConfig = {
+      runtimes: { php: "8.3", ruby: "3.3" },
+      baseline: { library: "shopify", version: "5.6.0" },
+      libraries: [
+        { lang: "php", name: "keepsuit", package: "keepsuit/liquid", versions: ["1.0.0"] },
+      ],
+    };
+
+    const excluded = getExcludedScenarios(config, "keepsuit");
+
+    expect(excluded.size).toBe(0);
+  });
+
+  test("returns string exclusions for all versions", () => {
+    const config: LebConfig = {
+      runtimes: { php: "8.3", ruby: "3.3" },
+      baseline: { library: "shopify", version: "5.6.0" },
+      libraries: [
+        {
+          lang: "php",
+          name: "keepsuit",
+          package: "keepsuit/liquid",
+          versions: ["1.0.0"],
+          excludeScenarios: ["unit/tags/extends", "unit/filters/sum"],
+        },
+      ],
+    };
+
+    const excluded = getExcludedScenarios(config, "keepsuit");
+
+    expect(excluded.size).toBe(2);
+    expect(excluded.has("unit/tags/extends")).toBe(true);
+    expect(excluded.has("unit/filters/sum")).toBe(true);
+  });
+
+  test("returns version-specific exclusions when version matches", () => {
+    const config: LebConfig = {
+      runtimes: { php: "8.3", ruby: "3.3" },
+      baseline: { library: "shopify", version: "5.6.0" },
+      libraries: [
+        {
+          lang: "php",
+          name: "keepsuit",
+          package: "keepsuit/liquid",
+          versions: ["1.0.0", "2.0.0"],
+          excludeScenarios: [
+            "unit/tags/extends",
+            { scenario: "unit/filters/sum", version: "1.0.0" },
+          ],
+        },
+      ],
+    };
+
+    // For version 1.0.0, both should be excluded
+    const excluded1 = getExcludedScenarios(config, "keepsuit", "1.0.0");
+    expect(excluded1.size).toBe(2);
+    expect(excluded1.has("unit/tags/extends")).toBe(true);
+    expect(excluded1.has("unit/filters/sum")).toBe(true);
+
+    // For version 2.0.0, only string exclusion should apply
+    const excluded2 = getExcludedScenarios(config, "keepsuit", "2.0.0");
+    expect(excluded2.size).toBe(1);
+    expect(excluded2.has("unit/tags/extends")).toBe(true);
+    expect(excluded2.has("unit/filters/sum")).toBe(false);
+  });
+
+  test("returns all exclusions when no version specified", () => {
+    const config: LebConfig = {
+      runtimes: { php: "8.3", ruby: "3.3" },
+      baseline: { library: "shopify", version: "5.6.0" },
+      libraries: [
+        {
+          lang: "php",
+          name: "keepsuit",
+          package: "keepsuit/liquid",
+          versions: ["1.0.0"],
+          excludeScenarios: [
+            "unit/tags/extends",
+            { scenario: "unit/filters/sum", version: "1.0.0" },
+          ],
+        },
+      ],
+    };
+
+    const excluded = getExcludedScenarios(config, "keepsuit");
+
+    expect(excluded.size).toBe(2);
+  });
+
+  test("returns empty set for unknown adapter", () => {
+    const config: LebConfig = {
+      runtimes: { php: "8.3", ruby: "3.3" },
+      baseline: { library: "shopify", version: "5.6.0" },
+      libraries: [],
+    };
+
+    const excluded = getExcludedScenarios(config, "unknown");
+
+    expect(excluded.size).toBe(0);
+  });
+
+  test("loads excludeScenarios from actual config file", async () => {
+    const config = await loadConfig();
+    const excluded = getExcludedScenarios(config, "shopify");
+
+    // shopify has unit/tags/extends excluded in leb.config.json
+    expect(excluded.has("unit/tags/extends")).toBe(true);
   });
 });

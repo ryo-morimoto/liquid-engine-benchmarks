@@ -4,11 +4,18 @@
  * Provides configuration loading and utilities for leb.config.json.
  */
 
-export { filterLibrariesByLang, getRuntimeVersion, loadConfig } from "./loader";
+export {
+  filterLibrariesByLang,
+  getExcludedScenarios,
+  getLibraryConfig,
+  getRuntimeVersion,
+  loadConfig,
+} from "./loader";
 export type {
   BaselineConfig,
   ConfigLang,
   LebConfig,
   LibraryConfig,
   RuntimeConfig,
+  ScenarioExclusion,
 } from "./types";
