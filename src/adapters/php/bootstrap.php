@@ -9,6 +9,13 @@
 
 declare(strict_types=1);
 
+// Force error output to stderr for debugging
+// This must come before any requires to capture autoload/class errors
+ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+ini_set('log_errors', '0');
+error_reporting(E_ALL);
+
 // Ensure we're running from CLI
 if (php_sapi_name() !== 'cli') {
     fwrite(STDERR, "Error: This script must be run from CLI\n");

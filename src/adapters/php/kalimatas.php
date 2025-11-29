@@ -13,6 +13,8 @@ require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/../../../vendor/autoload.php';
 
 use Liquid\Template;
+use Liquid\FileSystem\Local as LocalFileSystem;
+use Liquid\Liquid;
 
 // Read input from stdin
 $input = readInput();
@@ -21,10 +23,21 @@ $data = $input['data'];
 $iterations = (int) $input['iterations'];
 $warmup = (int) $input['warmup'];
 
+// Partials directory for include/render tags
+$partialsPath = __DIR__ . '/../../../scenarios/partials';
+
+// Configure Liquid to not require underscore prefix for partials
+// Default is '_' which would look for '_product-card.liquid' instead of 'product-card.liquid'
+Liquid::set('INCLUDE_PREFIX', '');
+
+// Create FileSystem loader for partials
+$fileSystem = new LocalFileSystem($partialsPath);
+
 // Run benchmark
 $timings = runBenchmark(
-    parseFn: function () use ($templateSource): Template {
+    parseFn: function () use ($templateSource, $fileSystem): Template {
         $template = new Template();
+        $template->setFileSystem($fileSystem);
         $template->parse($templateSource);
         return $template;
     },

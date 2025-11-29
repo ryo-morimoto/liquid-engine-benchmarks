@@ -15,6 +15,7 @@ require_once __DIR__ . '/../../../vendor/autoload.php';
 use Keepsuit\Liquid\EnvironmentFactory;
 use Keepsuit\Liquid\Template;
 use Keepsuit\Liquid\Render\RenderContext;
+use Keepsuit\Liquid\FileSystems\LocalFileSystem;
 
 // Read input from stdin
 $input = readInput();
@@ -23,8 +24,13 @@ $data = $input['data'];
 $iterations = (int) $input['iterations'];
 $warmup = (int) $input['warmup'];
 
+// Partials directory for include/render tags
+$partialsPath = __DIR__ . '/../../../scenarios/partials';
+
 // Create environment with strict mode for accurate benchmarking
+// FileSystem loader enables include/render tags to find partials
 $environment = EnvironmentFactory::new()
+    ->setFilesystem(new LocalFileSystem($partialsPath))
     ->setStrictVariables(false)
     ->setStrictFilters(false)
     ->setRethrowErrors(true)
