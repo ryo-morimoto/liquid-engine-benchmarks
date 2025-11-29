@@ -1,12 +1,9 @@
-# Full Benchmark Workflow
+# Benchmark Workflow
 #
-# Runs comprehensive benchmarks on:
-# - Push to main branch
-# - Monthly schedule (1st of each month)
-# - Manual trigger
+# Runs comprehensive benchmarks and updates README.md with results.
+# Triggers: push to main, monthly schedule, manual dispatch.
 #
-# Matrix is dynamically generated from leb.config.json.
-# Security: All shell inputs use environment variables, no untrusted user input.
+# Security: All shell inputs use environment variables from trusted sources only.
 
 name: Benchmark
 
@@ -42,57 +39,28 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Generate benchmark matrix from leb.config.json
-  setup:
-    name: Setup Matrix
-    runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.gen.outputs.matrix }}
-      timestamp: ${{ steps.gen.outputs.timestamp }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Generate matrix
-        id: gen
-        run: |
-          matrix=$(jq -c '{
-            include: [
-              .libraries[] |
-              .versions[] as $v |
-              {
-                adapter: .name,
-                package: .package,
-                lib_version: $v,
-                lang: .lang
-              }
-            ]
-          } + {
-            runtimes: .runtimes
-          }' leb.config.json)
-          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
-          echo "timestamp=$(date -u +%Y%m%d-%H%M%S)" >> "$GITHUB_OUTPUT"
-
-  # Run full benchmark for each adapter/version
   bench:
-    name: Bench ${{ matrix.adapter }}@${{ matrix.lib_version }}
-    needs: setup
+    name: Run Benchmarks
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJson(needs.setup.outputs.matrix) }}
 
     env:
       SCALE: ${{ inputs.scale || 'medium' }}
       ITERATIONS: ${{ inputs.iterations || '100' }}
-      ADAPTER: ${{ matrix.adapter }}
-      PACKAGE: ${{ matrix.package }}
-      LIB_VERSION: ${{ matrix.lib_version }}
-      LANG: ${{ matrix.lang }}
-      PHP_VERSION: ${{ fromJson(needs.setup.outputs.matrix).runtimes.php }}
-      RUBY_VERSION: ${{ fromJson(needs.setup.outputs.matrix).runtimes.ruby }}
 
     steps:
       - uses: actions/checkout@v4
+
+      # Extract runtime versions from config
+      - name: Read config
+        id: config
+        run: |
+          php_version=$(jq -r '.runtimes.php' leb.config.json)
+          ruby_version=$(jq -r '.runtimes.ruby' leb.config.json)
+          {
+            echo "php_version=$php_version"
+            echo "ruby_version=$ruby_version"
+            echo "timestamp=$(date -u +%Y%m%d-%H%M%S)"
+          } >> "$GITHUB_OUTPUT"
 
       - uses: oven-sh/setup-bun@v2
 
@@ -104,124 +72,79 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
-      # Seed benchmark database
-      - name: Seed database
-        run: bun src/run.ts prepare
-
-      # PHP setup
+      # Setup PHP
       - name: Setup PHP
-        if: matrix.lang == 'php'
         uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{ env.PHP_VERSION }}
+          php-version: ${{ steps.config.outputs.php_version }}
           extensions: mbstring
           tools: composer:v2
 
       - name: Cache Composer
-        if: matrix.lang == 'php'
         uses: actions/cache@v4
         with:
           path: vendor
-          key: composer-${{ matrix.package }}-${{ matrix.lib_version }}
+          key: composer-${{ hashFiles('composer.lock') }}
 
       - name: Install PHP dependencies
-        if: matrix.lang == 'php'
         run: |
           bun src/run.ts setup php
-          composer require "${PACKAGE}:${LIB_VERSION}" --no-interaction
+          composer install --no-interaction
 
-      # Ruby setup
+      # Setup Ruby
       - name: Setup Ruby
-        if: matrix.lang == 'ruby'
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: ${{ env.RUBY_VERSION }}
+          ruby-version: ${{ steps.config.outputs.ruby_version }}
 
       - name: Cache Bundler
-        if: matrix.lang == 'ruby'
         uses: actions/cache@v4
         with:
           path: vendor/bundle
-          key: bundler-${{ matrix.package }}-${{ matrix.lib_version }}
+          key: bundler-${{ hashFiles('Gemfile.lock') }}
 
       - name: Install Ruby dependencies
-        if: matrix.lang == 'ruby'
         run: |
           bun src/run.ts setup ruby
           bundle config set --local path vendor/bundle
-          sed -i "s/gem \"${PACKAGE}\"/gem \"${PACKAGE}\", \"${LIB_VERSION}\"/" Gemfile
           bundle install
 
-      # Run full benchmark for all scenarios
+      # Seed benchmark database
+      - name: Seed database
+        run: bun src/run.ts prepare
+
+      # Run benchmark and update README
       - name: Run benchmark
         run: |
-          mkdir -p results
-          bun src/run.ts list scenarios | while read scenario; do
-            echo "Running: ${ADAPTER} × ${scenario}"
-            output_file="results/${ADAPTER}_$(echo "${scenario}" | tr '/' '_').json"
-            bun src/run.ts bench "${ADAPTER}" "${scenario}" \
-              -s "${SCALE}" \
-              -i "${ITERATIONS}" \
-              -w 10 \
-              -o "${output_file}" || echo "Failed: ${scenario}"
-          done
+          # Run benchmark and capture table output
+          table_output=$(bun src/run.ts bench -f table -q)
 
-      - name: Upload results
-        uses: actions/upload-artifact@v4
-        with:
-          name: results-${{ matrix.adapter }}-${{ matrix.lib_version }}
-          path: results/
-          retention-days: 90
+          # Update README.md between markers (no code block for markdown table rendering)
+          awk -v table="$table_output" '
+            /<!-- CI_RESULTS_START -->/ {
+              print
+              print table
+              skip = 1
+              next
+            }
+            /<!-- CI_RESULTS_END -->/ {
+              skip = 0
+            }
+            !skip
+          ' README.md > README.md.tmp && mv README.md.tmp README.md
 
-  # Aggregate all results
-  aggregate:
-    name: Aggregate Results
-    needs: [setup, bench]
-    if: always() && !cancelled()
-    runs-on: ubuntu-latest
-
-    env:
-      TIMESTAMP: ${{ needs.setup.outputs.timestamp }}
-      SCALE: ${{ inputs.scale || 'medium' }}
-      ITERATIONS: ${{ inputs.iterations || '100' }}
-      EVENT_NAME: ${{ github.event_name }}
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download all results
-        uses: actions/download-artifact@v4
-        with:
-          path: all-results
-          pattern: results-*
-          merge-multiple: true
-
-      - name: Create summary
-        run: |
+          # Output to job summary
           {
-            echo "# Benchmark Results - ${TIMESTAMP}"
+            echo "# Benchmark Results"
             echo ""
-            echo "## Configuration"
-            echo "- Scale: ${SCALE}"
-            echo "- Iterations: ${ITERATIONS}"
-            echo "- Trigger: ${EVENT_NAME}"
-            echo ""
-            echo "## Results"
-            echo ""
+            echo "$table_output"
+          } >> "$GITHUB_STEP_SUMMARY"
 
-            total=$(find all-results -name '*.json' 2>/dev/null | wc -l)
-            success=$(find all-results -name '*.json' -exec grep -l '"success": true' {} \; 2>/dev/null | wc -l)
-
-            echo "- Total: ${total}"
-            echo "- Success: ${success}"
-            echo "- Failed: $((total - success))"
-          } | tee summary.md >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload aggregated results
-        uses: actions/upload-artifact@v4
+      # Commit README changes
+      - name: Commit README updates
+        uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          name: benchmark-${{ needs.setup.outputs.timestamp }}
-          path: |
-            all-results/
-            summary.md
-          retention-days: 90
+          commit_message: "docs: update benchmark results [skip ci]"
+          file_pattern: README.md
+          commit_user_name: github-actions[bot]
+          commit_user_email: github-actions[bot]@users.noreply.github.com
