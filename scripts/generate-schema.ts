@@ -78,7 +78,7 @@ async function main(): Promise<void> {
       const schema = generateSchema(type);
       const processed = postProcessSchema(schema, file);
       const outputPath = join(SCHEMA_DIR, file);
-      await Bun.write(outputPath, JSON.stringify(processed, null, 2) + "\n");
+      await Bun.write(outputPath, `${JSON.stringify(processed, null, 2)}\n`);
       console.log(`  ✓ ${file}`);
     } catch (error) {
       console.error(`  ✗ Failed to generate ${file}:`, error);

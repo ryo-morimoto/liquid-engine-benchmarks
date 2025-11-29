@@ -115,18 +115,30 @@ function seedCollections(): void {
   );
 
   const collectionNames = [
-    "Featured", "New Arrivals", "Best Sellers", "Sale", "Summer Collection",
-    "Winter Essentials", "Gift Ideas", "Trending Now", "Staff Picks",
-    "Limited Edition", "Eco-Friendly", "Premium Selection", "Budget Friendly",
-    "Top Rated", "Seasonal Favorites",
+    "Featured",
+    "New Arrivals",
+    "Best Sellers",
+    "Sale",
+    "Summer Collection",
+    "Winter Essentials",
+    "Gift Ideas",
+    "Trending Now",
+    "Staff Picks",
+    "Limited Edition",
+    "Eco-Friendly",
+    "Premium Selection",
+    "Budget Friendly",
+    "Top Rated",
+    "Seasonal Favorites",
   ];
 
   for (let i = 1; i <= MAX_COLLECTIONS; i++) {
     const baseName = collectionNames[(i - 1) % collectionNames.length];
     if (!baseName) throw new Error(`Collection name not found for index ${i}`);
-    const title = i <= collectionNames.length
-      ? baseName
-      : `${baseName} ${Math.ceil(i / collectionNames.length)}`;
+    const title =
+      i <= collectionNames.length
+        ? baseName
+        : `${baseName} ${Math.ceil(i / collectionNames.length)}`;
 
     insertCollection.run(i, title, faker.commerce.productDescription());
 
@@ -151,9 +163,11 @@ function seedCartItems(): void {
     "INSERT INTO cart_items (id, product_id, variant_id, quantity, price) VALUES (?, ?, ?, ?, ?)"
   );
 
-  const variants = db
-    .query("SELECT id, product_id, price FROM variants")
-    .all() as { id: number; product_id: number; price: number }[];
+  const variants = db.query("SELECT id, product_id, price FROM variants").all() as {
+    id: number;
+    product_id: number;
+    price: number;
+  }[];
 
   for (let i = 1; i <= MAX_CART_ITEMS; i++) {
     const variant = faker.helpers.arrayElement(variants);
@@ -192,8 +206,16 @@ function seedCategoriesAndTags(): void {
   const insertTag = db.prepare("INSERT INTO tags (id, name) VALUES (?, ?)");
 
   const categoryNames = [
-    "News", "Tutorials", "Reviews", "Guides", "Updates",
-    "Tips", "Announcements", "Behind the Scenes", "Community", "Events",
+    "News",
+    "Tutorials",
+    "Reviews",
+    "Guides",
+    "Updates",
+    "Tips",
+    "Announcements",
+    "Behind the Scenes",
+    "Community",
+    "Events",
   ];
 
   for (let i = 0; i < MAX_CATEGORIES; i++) {
@@ -203,11 +225,36 @@ function seedCategoriesAndTags(): void {
   }
 
   const tagNames = [
-    "featured", "trending", "new", "sale", "popular", "recommended",
-    "exclusive", "limited", "bestseller", "seasonal", "eco-friendly",
-    "handmade", "organic", "vegan", "sustainable", "premium", "budget",
-    "gift", "holiday", "summer", "winter", "spring", "fall", "classic",
-    "modern", "vintage", "minimalist", "bold", "elegant", "casual",
+    "featured",
+    "trending",
+    "new",
+    "sale",
+    "popular",
+    "recommended",
+    "exclusive",
+    "limited",
+    "bestseller",
+    "seasonal",
+    "eco-friendly",
+    "handmade",
+    "organic",
+    "vegan",
+    "sustainable",
+    "premium",
+    "budget",
+    "gift",
+    "holiday",
+    "summer",
+    "winter",
+    "spring",
+    "fall",
+    "classic",
+    "modern",
+    "vintage",
+    "minimalist",
+    "bold",
+    "elegant",
+    "casual",
   ];
 
   for (let i = 0; i < MAX_TAGS; i++) {

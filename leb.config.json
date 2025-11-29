@@ -38,9 +38,7 @@
       "name": "shopify",
       "package": "liquid",
       "versions": ["5.5.0", "5.6.0"],
-      "excludeScenarios": [
-        "unit/tags/extends"
-      ]
+      "excludeScenarios": ["unit/tags/extends"]
     }
   ]
 }

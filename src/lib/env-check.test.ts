@@ -11,7 +11,6 @@ import {
   checkAdapters,
   checkAllAdapters,
   ensureAdapterReady,
-  type CheckResult,
   internal,
 } from "./env-check";
 import { CliError } from "./errors";
@@ -70,8 +69,7 @@ Zend Engine v4.3.14, Copyright (c) Zend Technologies`;
 
   describe("Ruby version parsing", () => {
     test("extracts version from standard Ruby output", () => {
-      const output =
-        "ruby 3.3.6 (2024-11-05 revision 75015d4c1f) [x86_64-linux]";
+      const output = "ruby 3.3.6 (2024-11-05 revision 75015d4c1f) [x86_64-linux]";
       expect(extractVersion("ruby", output)).toBe("3.3");
     });
 
@@ -166,7 +164,6 @@ describe("versionSatisfies", () => {
       expect(versionSatisfies("0.1", "0.0")).toBe(true);
     });
   });
-
 });
 
 // ============================================================================
@@ -312,7 +309,7 @@ describe("ensureAdapterReady", () => {
 
     if (result.ok) {
       // If keepsuit is ready, ensureAdapterReady should not throw
-      await expect(ensureAdapterReady("keepsuit")).resolves.toBeUndefined();
+      await ensureAdapterReady("keepsuit");
     }
   });
 
@@ -321,9 +318,12 @@ describe("ensureAdapterReady", () => {
 
     if (!result.ok) {
       // If keepsuit is not ready, ensureAdapterReady should throw
-      await expect(ensureAdapterReady("keepsuit")).rejects.toBeInstanceOf(
-        CliError
-      );
+      try {
+        await ensureAdapterReady("keepsuit");
+        expect.unreachable("Should have thrown CliError");
+      } catch (e) {
+        expect(e).toBeInstanceOf(CliError);
+      }
     }
   });
 
@@ -375,12 +375,8 @@ describe("CheckResult structure", () => {
 
       expect(json).toHaveProperty("success", false);
       expect(json).toHaveProperty("error");
-      expect((json as { error: { code: string } }).error).toHaveProperty(
-        "code"
-      );
-      expect((json as { error: { message: string } }).error).toHaveProperty(
-        "message"
-      );
+      expect((json as { error: { code: string } }).error).toHaveProperty("code");
+      expect((json as { error: { message: string } }).error).toHaveProperty("message");
     }
   });
 

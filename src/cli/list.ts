@@ -118,7 +118,7 @@ Shell composition:
  * Outputs one item per line to stdout.
  * @param args - CLI arguments (after 'list' subcommand)
  */
-export async function run(args: string[]): Promise<void> {
+export function run(args: string[]): void {
   const options = parseArgs_(args);
 
   if (options.target === "adapters") {

@@ -112,10 +112,7 @@ export class DataLoader {
   }
 
   private loadImages(productId: number): Image[] {
-    return this.queryAll<Image>(
-      "SELECT id, src, alt FROM images WHERE product_id = ?",
-      productId
-    );
+    return this.queryAll<Image>("SELECT id, src, alt FROM images WHERE product_id = ?", productId);
   }
 
   private loadCollections(limit: number, productLimit: number): Collection[] {

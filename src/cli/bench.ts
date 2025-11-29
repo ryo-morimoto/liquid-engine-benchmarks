@@ -369,7 +369,7 @@ function outputTable(
     if (!byScenario.has(r.scenario)) {
       byScenario.set(r.scenario, new Map());
     }
-    byScenario.get(r.scenario)!.set(r.adapter, r);
+    byScenario.get(r.scenario)?.set(r.adapter, r);
   }
 
   // Sort scenarios
@@ -396,9 +396,10 @@ function outputTable(
 
   // Data rows
   for (const scenario of scenarios) {
-    const scenarioResults = byScenario.get(scenario)!;
+    const scenarioResults = byScenario.get(scenario);
+    if (!scenarioResults) continue;
     const baselineResult = scenarioResults.get(actualBaseline);
-    const baselineMs = baselineResult?.success ? baselineResult.metrics?.total.mean_ms ?? 0 : 0;
+    const baselineMs = baselineResult?.success ? (baselineResult.metrics?.total.mean_ms ?? 0) : 0;
 
     const cols = activeAdapters.map((adapter) => {
       const result = scenarioResults.get(adapter);
@@ -698,13 +699,20 @@ async function runSingle(options: SingleBenchOptions): Promise<void> {
     }
   } else {
     // Table format for single benchmark
-    const metrics = result.metrics!;
+    if (!result.metrics) return;
+    const metrics = result.metrics;
     console.log("");
     console.log(`${options.adapter} × ${options.scenario}`);
     console.log("-".repeat(50));
-    console.log(`  Parse:  ${formatTime(metrics.parse.mean_ms)} (±${formatTime(metrics.parse.stddev_ms)})`);
-    console.log(`  Render: ${formatTime(metrics.render.mean_ms)} (±${formatTime(metrics.render.stddev_ms)})`);
-    console.log(`  Total:  ${formatTime(metrics.total.mean_ms)} (±${formatTime(metrics.total.stddev_ms)})`);
+    console.log(
+      `  Parse:  ${formatTime(metrics.parse.mean_ms)} (±${formatTime(metrics.parse.stddev_ms)})`
+    );
+    console.log(
+      `  Render: ${formatTime(metrics.render.mean_ms)} (±${formatTime(metrics.render.stddev_ms)})`
+    );
+    console.log(
+      `  Total:  ${formatTime(metrics.total.mean_ms)} (±${formatTime(metrics.total.stddev_ms)})`
+    );
     console.log("");
   }
 }

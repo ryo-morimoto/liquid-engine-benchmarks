@@ -221,4 +221,3 @@ export async function loadScenarios(
   const loader = new ScenarioLoader(baseDir);
   return loader.loadMany(scenarioPaths);
 }
-

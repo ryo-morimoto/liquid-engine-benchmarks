@@ -11,7 +11,13 @@
  */
 
 import { beforeAll, describe, expect, test } from "bun:test";
-import { AdapterError, ADAPTERS, isValidAdapterOutput, listAdapters, runAdapter } from "../../src/lib";
+import {
+  AdapterError,
+  ADAPTERS,
+  isValidAdapterOutput,
+  listAdapters,
+  runAdapter,
+} from "../../src/lib";
 import type { AdapterInput, AdapterName } from "../../src/types";
 
 /**
@@ -39,10 +45,10 @@ async function isAdapterAvailable(adapterName: AdapterName): Promise<boolean> {
   const config = ADAPTERS[adapterName];
 
   // Check environment skip flags (bracket notation for index signature access)
-  if (config.lang === "php" && process.env["SKIP_PHP_ADAPTERS"] === "1") {
+  if (config.lang === "php" && process.env.SKIP_PHP_ADAPTERS === "1") {
     return false;
   }
-  if (config.lang === "ruby" && process.env["SKIP_RUBY_ADAPTERS"] === "1") {
+  if (config.lang === "ruby" && process.env.SKIP_RUBY_ADAPTERS === "1") {
     return false;
   }
 

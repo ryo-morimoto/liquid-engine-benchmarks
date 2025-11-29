@@ -8,12 +8,7 @@
 import { describe, expect, test } from "bun:test";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  createScenarioLoader,
-  loadScenario,
-  loadScenarios,
-  ScenarioLoader,
-} from "./loader";
+import { createScenarioLoader, loadScenario, loadScenarios, ScenarioLoader } from "./loader";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SCENARIOS_DIR = join(__dirname, "../../../scenarios");

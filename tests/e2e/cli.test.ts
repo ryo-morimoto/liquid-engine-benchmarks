@@ -322,11 +322,7 @@ describe("E2E: Different Scenarios", () => {
       return;
     }
 
-    const { stderr, exitCode } = await runCli([
-      "bench",
-      "keepsuit",
-      "nonexistent/template",
-    ]);
+    const { stderr, exitCode } = await runCli(["bench", "keepsuit", "nonexistent/template"]);
 
     expect(exitCode).toBe(1);
     expect(stderr).toContain("scenario not found");
@@ -352,12 +348,7 @@ describe("E2E: List Command", () => {
   });
 
   test("lists scenarios with category filter", async () => {
-    const { stdout, exitCode } = await runCli([
-      "list",
-      "scenarios",
-      "-c",
-      "unit",
-    ]);
+    const { stdout, exitCode } = await runCli(["list", "scenarios", "-c", "unit"]);
 
     expect(exitCode).toBe(0);
     // All results should be under unit/ category
@@ -423,7 +414,11 @@ describe("E2E: JSON Error Output", () => {
     // With --format json, error should be on stdout
     const output = stdout || stderr;
     // May fail if deps not installed (which outputs different error format)
-    if (output.includes("SCENARIO_NOT_FOUND") || output.includes("RUNTIME_NOT_FOUND") || output.includes("DEPS_NOT_INSTALLED")) {
+    if (
+      output.includes("SCENARIO_NOT_FOUND") ||
+      output.includes("RUNTIME_NOT_FOUND") ||
+      output.includes("DEPS_NOT_INSTALLED")
+    ) {
       expect(() => JSON.parse(output)).not.toThrow();
       const parsed = JSON.parse(output);
       expect(parsed.success).toBe(false);
@@ -468,11 +463,7 @@ describe("E2E: JSON Error Output", () => {
 
 describe("E2E: Error Messages", () => {
   test("shows human-readable error by default", async () => {
-    const { stderr, exitCode } = await runCli([
-      "bench",
-      "nonexistent",
-      "unit/tags/for",
-    ]);
+    const { stderr, exitCode } = await runCli(["bench", "nonexistent", "unit/tags/for"]);
 
     expect(exitCode).toBe(1);
     // Should be human readable, not JSON
@@ -488,13 +479,7 @@ describe("E2E: Error Messages", () => {
   });
 
   test("error message for invalid iterations (too low)", async () => {
-    const { stderr, exitCode } = await runCli([
-      "bench",
-      "keepsuit",
-      "unit/tags/for",
-      "-i",
-      "0",
-    ]);
+    const { stderr, exitCode } = await runCli(["bench", "keepsuit", "unit/tags/for", "-i", "0"]);
 
     expect(exitCode).toBe(1);
     expect(stderr).toContain("--iterations must be between");
@@ -542,13 +527,7 @@ describe("E2E: Exit Codes", () => {
   });
 
   test("exit code 1 for invalid scale", async () => {
-    const { exitCode } = await runCli([
-      "bench",
-      "keepsuit",
-      "test",
-      "-s",
-      "invalid",
-    ]);
+    const { exitCode } = await runCli(["bench", "keepsuit", "test", "-s", "invalid"]);
     expect(exitCode).toBe(1);
   });
 });
@@ -637,20 +616,20 @@ describe("E2E: Bench --format Option", () => {
     });
 
     test("accepts --format table in all mode", async () => {
-      const { stdout, exitCode } = await runCli(["bench", "--format", "table", "--help"]);
+      const { exitCode } = await runCli(["bench", "--format", "table", "--help"]);
 
       // Help flag takes precedence, but format arg should be valid
       expect(exitCode).toBe(0);
     });
 
     test("accepts --format json in all mode", async () => {
-      const { stdout, exitCode } = await runCli(["bench", "--format", "json", "--help"]);
+      const { exitCode } = await runCli(["bench", "--format", "json", "--help"]);
 
       expect(exitCode).toBe(0);
     });
 
     test("accepts -f short flag", async () => {
-      const { stdout, exitCode } = await runCli(["bench", "-f", "table", "--help"]);
+      const { exitCode } = await runCli(["bench", "-f", "table", "--help"]);
 
       expect(exitCode).toBe(0);
     });
@@ -823,37 +802,17 @@ describe("E2E: Bench --quiet Option", () => {
     });
 
     test("accepts -q short flag in single mode", async () => {
-      const { exitCode } = await runCli([
-        "bench",
-        "keepsuit",
-        "unit/tags/for",
-        "-q",
-        "--help",
-      ]);
+      const { exitCode } = await runCli(["bench", "keepsuit", "unit/tags/for", "-q", "--help"]);
       expect(exitCode).toBe(0);
     });
 
     test("-q can appear before positional args", async () => {
-      const { exitCode } = await runCli([
-        "bench",
-        "-q",
-        "keepsuit",
-        "unit/tags/for",
-        "--help",
-      ]);
+      const { exitCode } = await runCli(["bench", "-q", "keepsuit", "unit/tags/for", "--help"]);
       expect(exitCode).toBe(0);
     });
 
     test("-q works with other options", async () => {
-      const { exitCode } = await runCli([
-        "bench",
-        "-s",
-        "large",
-        "-q",
-        "-i",
-        "50",
-        "--help",
-      ]);
+      const { exitCode } = await runCli(["bench", "-s", "large", "-q", "-i", "50", "--help"]);
       expect(exitCode).toBe(0);
     });
   });
@@ -1196,13 +1155,7 @@ describe("E2E: Bench Option Combinations", () => {
     });
 
     test("rejects zero iterations", async () => {
-      const { stderr, exitCode } = await runCli([
-        "bench",
-        "keepsuit",
-        "unit/tags/for",
-        "-i",
-        "0",
-      ]);
+      const { stderr, exitCode } = await runCli(["bench", "keepsuit", "unit/tags/for", "-i", "0"]);
       expect(exitCode).toBe(1);
       expect(stderr).toContain("--iterations must be between 1 and 10000");
     });
@@ -1274,41 +1227,22 @@ describe("E2E: Bench Adapters", () => {
   describe("adapter validation", () => {
     test("accepts keepsuit adapter", async () => {
       // Just validating adapter name, not running benchmark
-      const { stdout, exitCode } = await runCli([
-        "bench",
-        "keepsuit",
-        "unit/tags/for",
-        "--help",
-      ]);
+      const { exitCode } = await runCli(["bench", "keepsuit", "unit/tags/for", "--help"]);
       expect(exitCode).toBe(0);
     });
 
     test("accepts kalimatas adapter", async () => {
-      const { stdout, exitCode } = await runCli([
-        "bench",
-        "kalimatas",
-        "unit/tags/for",
-        "--help",
-      ]);
+      const { exitCode } = await runCli(["bench", "kalimatas", "unit/tags/for", "--help"]);
       expect(exitCode).toBe(0);
     });
 
     test("accepts shopify adapter", async () => {
-      const { stdout, exitCode } = await runCli([
-        "bench",
-        "shopify",
-        "unit/tags/for",
-        "--help",
-      ]);
+      const { exitCode } = await runCli(["bench", "shopify", "unit/tags/for", "--help"]);
       expect(exitCode).toBe(0);
     });
 
     test("rejects unknown adapter", async () => {
-      const { stderr, exitCode } = await runCli([
-        "bench",
-        "unknown",
-        "unit/tags/for",
-      ]);
+      const { stderr, exitCode } = await runCli(["bench", "unknown", "unit/tags/for"]);
       expect(exitCode).toBe(1);
       expect(stderr).toContain('Unknown adapter "unknown"');
     });
@@ -1346,25 +1280,13 @@ describe("E2E: Bench Mode Detection", () => {
 
   test("adapter and scenario triggers single mode", async () => {
     // Just check argument parsing, not full benchmark
-    const { stdout, exitCode } = await runCli([
-      "bench",
-      "keepsuit",
-      "unit/tags/for",
-      "--help",
-    ]);
+    const { exitCode } = await runCli(["bench", "keepsuit", "unit/tags/for", "--help"]);
 
     expect(exitCode).toBe(0);
   });
 
   test("flags without positional args stay in all mode (shows help)", async () => {
-    const { stdout, exitCode } = await runCli([
-      "bench",
-      "-s",
-      "large",
-      "-i",
-      "50",
-      "--help",
-    ]);
+    const { stdout, exitCode } = await runCli(["bench", "-s", "large", "-i", "50", "--help"]);
 
     expect(exitCode).toBe(0);
     // In all mode, help is displayed

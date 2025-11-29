@@ -100,11 +100,7 @@ export const Errors = {
     });
   },
 
-  runtimeVersionMismatch(
-    runtime: RuntimeName,
-    required: string,
-    found: string
-  ): CliError {
+  runtimeVersionMismatch(runtime: RuntimeName, required: string, found: string): CliError {
     return new CliError({
       code: ErrorCode.RUNTIME_VERSION_MISMATCH,
       message: `${runtime} version mismatch: requires ${required}, found ${found}`,

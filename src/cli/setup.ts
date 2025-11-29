@@ -139,7 +139,7 @@ export function generateGemfile(config: LebConfig): string {
     lines.push(`gem "${lib.package}"`);
   }
 
-  return lines.join("\n") + "\n";
+  return `${lines.join("\n")}\n`;
 }
 
 /**

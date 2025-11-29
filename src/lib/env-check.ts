@@ -14,7 +14,7 @@ import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type AdapterName, ADAPTER_NAMES, type RuntimeName } from "../types";
-import { CliError, Errors } from "./errors";
+import { type CliError, Errors } from "./errors";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = join(__dirname, "../..");
@@ -205,8 +205,7 @@ function checkDeps(runtime: RuntimeName): boolean {
     return existsSync(join(PROJECT_ROOT, "vendor/autoload.php"));
   }
   return (
-    existsSync(join(PROJECT_ROOT, "Gemfile.lock")) ||
-    existsSync(join(PROJECT_ROOT, ".bundle"))
+    existsSync(join(PROJECT_ROOT, "Gemfile.lock")) || existsSync(join(PROJECT_ROOT, ".bundle"))
   );
 }
 
@@ -278,9 +277,7 @@ export async function checkAdapter(adapter: AdapterName): Promise<CheckResult> {
  * Check environment for multiple adapters.
  * Runs checks in parallel for efficiency.
  */
-export async function checkAdapters(
-  adapters: AdapterName[]
-): Promise<CheckResult[]> {
+export async function checkAdapters(adapters: AdapterName[]): Promise<CheckResult[]> {
   return Promise.all(adapters.map(checkAdapter));
 }
 

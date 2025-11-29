@@ -6,7 +6,7 @@
     "format:check": "biome format .",
     "lint": "biome lint .",
     "lint:fix": "biome lint --write .",
-    "lint:typecheck": "eslint .",
+    "lint:strict": "eslint .",
     "check": "biome check --write . && eslint .",
     "generate:schema": "bun scripts/generate-schema.ts",
     "validate:bench": "bun scripts/validate-schema.ts schema/bench.schema.json bench.json",
