@@ -2,10 +2,11 @@
 Partial: product card component
 Used by include/render tests
 {%- endcomment -%}
+{% assign variant = product.variants | first %}
 <div class="product-card">
-  <h2>{{ product.name }}</h2>
+  <h2>{{ product.title }}</h2>
   <p>{{ product.price }}</p>
-  {% if product.available %}
+  {% if variant.available %}
   <span class="in-stock">In Stock</span>
   {% endif %}
 </div>
