@@ -14,17 +14,17 @@ PHP と Ruby の Liquid テンプレートエンジン実装のパフォーマ�
 
 ### 素材準備（並行可能）
 
-- [ ] [テストデータ](docs/plans/assets.ja.md#テストデータ) - data/*.yml
-- [ ] [テンプレート](docs/plans/assets.ja.md#テンプレート) - templates/**/*.liquid
+- [x] [テストデータ](docs/plans/assets.ja.md#テストデータ) - data/benchmark.db (SQLite)
+- [x] [テンプレート](docs/plans/assets.ja.md#テンプレート) - templates/**/*.liquid
 
 ### 開発環境（並行可能）
 
-- [ ] [環境構築](docs/plans/environment.ja.md#環境構築) - shell.nix, .envrc
-- [ ] [ライブラリ管理](docs/plans/environment.ja.md#ライブラリ管理) - vendors/, setup-vendors.sh
+- [x] [環境構築](docs/plans/environment.ja.md#環境構築) - flake.nix, .envrc
+- [x] [ライブラリ管理](docs/plans/environment.ja.md#ライブラリ管理) - src/cli/setup.ts
 
 ### エントリーポイント実装（素材準備 + 開発環境 完了後）
 
-- [ ] [エントリーポイント](docs/plans/entrypoint.ja.md) - src/
+- [x] [エントリーポイント](docs/plans/entrypoint.ja.md) - src/
 
 ### 実行基盤（エントリーポイント実装 完了後）
 
@@ -37,4 +37,4 @@ PHP と Ruby の Liquid テンプレートエンジン実装のパフォーマ�
 
 ### ドキュメント（独立）
 
-- [ ] [README・CONTRIBUTING](docs/plans/documentation.ja.md) - README.md, CONTRIBUTING.md
+- [x] [README・CONTRIBUTING](docs/plans/documentation.ja.md) - README.md, CONTRIBUTING.md
