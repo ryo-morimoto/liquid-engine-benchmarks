@@ -14,177 +14,125 @@ GitHub Actions による CI/CD 設定。
 
 ### 目的
 
-GitHub Actions による自動ベンチマーク実行と結果記録
+GitHub Actions による自動テスト・ベンチマーク実行と結果記録
 
 ### 成果物
 
-- .github/workflows/benchmark.yml
-- .github/workflows/pr-check.yml
-
-### .github/workflows/benchmark.yml
-
-```yaml
-name: Benchmark
-
-on:
-  # 手動実行
-  workflow_dispatch:
-    inputs:
-      profile:
-        description: 'Benchmark profile'
-        required: true
-        default: 'standard'
-        type: choice
-        options:
-          - quick
-          - standard
-          - precise
-  # スケジュール実行（週次）
-  schedule:
-    - cron: '0 0 * * 0'  # 毎週日曜 00:00 UTC
-
-jobs:
-  benchmark:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      # Nix セットアップ
-      - uses: cachix/install-nix-action@v25
-        with:
-          nix_path: nixpkgs=channel:nixos-24.05
-
-      # 依存関係キャッシュ
-      - name: Cache vendors
-        uses: actions/cache@v4
-        with:
-          path: vendors
-          key: vendors-${{ hashFiles('scripts/setup-vendors.sh') }}
-
-      - name: Cache PHP dependencies
-        uses: actions/cache@v4
-        with:
-          path: php/vendor
-          key: php-${{ hashFiles('php/composer.lock') }}
-
-      - name: Cache Ruby dependencies
-        uses: actions/cache@v4
-        with:
-          path: ruby/vendor/bundle
-          key: ruby-${{ hashFiles('ruby/Gemfile.lock') }}
-
-      # セットアップ
-      - name: Setup vendors
-        run: nix-shell --run "./scripts/setup-vendors.sh"
-
-      - name: Install PHP dependencies
-        run: nix-shell --run "cd php && composer install"
-
-      - name: Install Ruby dependencies
-        run: nix-shell --run "cd ruby && bundle install"
-
-      # ベンチマーク実行
-      - name: Run PHP benchmarks
-        run: |
-          nix-shell --run "./scripts/bench-php.sh ${{ inputs.profile || 'standard' }}"
-
-      - name: Run Ruby benchmarks
-        run: |
-          nix-shell --run "./scripts/bench-ruby.sh"
-
-      # 結果保存
-      - name: Upload results
-        uses: actions/upload-artifact@v4
-        with:
-          name: benchmark-results-${{ github.run_id }}
-          path: results/
-          retention-days: 90
-```
-
-### .github/workflows/pr-check.yml
-
-```yaml
-name: PR Check
-
-on:
-  pull_request:
-    branches: [main]
-    paths:
-      - 'php/**'
-      - 'ruby/**'
-      - 'templates/**'
-      - 'data/**'
-
-jobs:
-  syntax-check:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: cachix/install-nix-action@v25
-        with:
-          nix_path: nixpkgs=channel:nixos-24.05
-
-      # PHP 構文チェック
-      - name: PHP syntax check
-        run: |
-          nix-shell --run "find php/src -name '*.php' -exec php -l {} \;"
-
-      # Ruby 構文チェック
-      - name: Ruby syntax check
-        run: |
-          nix-shell --run "ruby -c ruby/benchmark.rb"
-
-  quick-benchmark:
-    runs-on: ubuntu-latest
-    needs: syntax-check
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: cachix/install-nix-action@v25
-
-      - name: Setup vendors
-        run: nix-shell --run "./scripts/setup-vendors.sh"
-
-      - name: Install dependencies
-        run: |
-          nix-shell --run "cd php && composer install"
-          nix-shell --run "cd ruby && bundle install"
-
-      # クイックベンチ（PR 確認用）
-      - name: Quick benchmark
-        run: |
-          nix-shell --run "./scripts/bench-php.sh quick"
-```
+- `.github/workflows/ci.yml` - PR チェック
+- `.github/workflows/benchmark.yml` - フルベンチマーク
 
 ### ワークフロー概要
 
 | Workflow | トリガー | 用途 |
 |----------|---------|------|
-| benchmark.yml | 手動/週次 | 本番ベンチマーク |
-| pr-check.yml | PR | 構文チェック + クイックベンチ |
+| ci.yml | PR to main | テスト + クイックベンチ + PRコメント |
+| benchmark.yml | main push, 月次, 手動 | フルベンチマーク + Artifact保存 |
+
+### 動的 Matrix 生成
+
+`leb.config.json` から自動的に matrix を生成:
+
+```
+leb.config.json
+├── keepsuit: ["1.0.0"]           → 1 job
+├── kalimatas: ["1.5.0"]          → 1 job
+└── shopify: ["5.5.0", "5.6.0"]   → 2 jobs
+                                   ────────
+                                   計 4 jobs 並列
+```
+
+生成される matrix:
+```json
+{
+  "include": [
+    { "adapter": "keepsuit",  "lib_version": "1.0.0", "package": "keepsuit/liquid", "lang": "php" },
+    { "adapter": "kalimatas", "lib_version": "1.5.0", "package": "liquid/liquid",   "lang": "php" },
+    { "adapter": "shopify",   "lib_version": "5.5.0", "package": "liquid",          "lang": "ruby" },
+    { "adapter": "shopify",   "lib_version": "5.6.0", "package": "liquid",          "lang": "ruby" }
+  ],
+  "runtimes": { "php": "8.3", "ruby": "3.3" }
+}
+```
+
+### ci.yml
+
+```yaml
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    # Bun テスト（lint + unit tests）
+
+  setup:
+    # leb.config.json から matrix 生成
+    outputs:
+      matrix: ${{ steps.gen.outputs.matrix }}
+
+  bench:
+    needs: [test, setup]
+    strategy:
+      matrix: ${{ fromJson(needs.setup.outputs.matrix) }}
+    # アダプター/バージョンごとにクイックベンチ実行
+
+  comment:
+    needs: bench
+    # 結果を集約してPRコメント
+```
+
+### benchmark.yml
+
+```yaml
+name: Benchmark
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 0 1 * *'  # 月次
+  workflow_dispatch:
+    inputs:
+      scale: [small, medium, large]
+      iterations: string
+
+jobs:
+  setup:
+    # matrix 生成
+
+  bench:
+    strategy:
+      matrix: ${{ fromJson(needs.setup.outputs.matrix) }}
+    # フルベンチマーク実行
+
+  aggregate:
+    # 結果集約 + サマリー生成
+```
 
 ### キャッシュ戦略
 
-```
-vendors/           -> setup-vendors.sh のハッシュでキャッシュ
-php/vendor/        -> composer.lock のハッシュでキャッシュ
-ruby/vendor/bundle -> Gemfile.lock のハッシュでキャッシュ
-```
+| キャッシュ対象 | キー |
+|--------------|------|
+| Bun | `bun.lock` hash |
+| Composer | `package:version` |
+| Bundler | `package:version` |
 
 ### 成果物保存
 
-- ベンチマーク結果: 90日間保持
-- ファイル名: `benchmark-results-{run_id}`
+- クイックベンチ結果: 7日間保持
+- フルベンチ結果: 90日間保持
+- ファイル名: `benchmark-{timestamp}`
 
 ### 検証項目
 
-- [ ] benchmark.yml 構文正常
-- [ ] pr-check.yml 構文正常
-- [ ] 手動実行成功
+- [x] ci.yml 構文正常
+- [x] benchmark.yml 構文正常
 - [ ] PR チェック成功
+- [ ] main マージ時ベンチ成功
+- [ ] 月次スケジュール動作確認
+- [ ] 手動実行成功
 - [ ] キャッシュ有効化確認
 - [ ] Artifact 保存確認
+- [ ] PRコメント投稿確認

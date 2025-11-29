@@ -28,12 +28,12 @@ PHP と Ruby の Liquid テンプレートエンジン実装のパフォーマ�
 
 ### 実行基盤（エントリーポイント実装 完了後）
 
-- [ ] [実行スクリプト](docs/plans/execution.ja.md#実行スクリプト) - scripts/*.sh
-- [ ] [結果出力](docs/plans/execution.ja.md#結果出力) - results/
+- [x] [実行スクリプト](docs/plans/execution.ja.md#実行スクリプト) - `leb bench` (引数なしで全実行)
+- [x] [結果出力](docs/plans/execution.ja.md#結果出力) - results/
 
 ### 自動化（実行基盤 完了後）
 
-- [ ] [CI/CD](docs/plans/automation.ja.md#cicd) - .github/workflows/
+- [x] [CI/CD](docs/plans/automation.ja.md#cicd) - .github/workflows/
 
 ### ドキュメント（独立）
 
