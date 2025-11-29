@@ -13,19 +13,34 @@
       "lang": "php",
       "name": "keepsuit",
       "package": "keepsuit/liquid",
-      "versions": ["1.0.0"]
+      "versions": ["0.9.0"],
+      "excludeScenarios": [
+        "unit/tags/extends",
+        "unit/tags/include",
+        "unit/tags/include-with-vars",
+        "composite/for-with-include"
+      ]
     },
     {
       "lang": "php",
       "name": "kalimatas",
       "package": "liquid/liquid",
-      "versions": ["1.5.0"]
+      "versions": ["1.4.44"],
+      "excludeScenarios": [
+        "unit/tags/render",
+        "unit/tags/echo",
+        "unit/tags/liquid",
+        "composite/for-with-render"
+      ]
     },
     {
       "lang": "ruby",
       "name": "shopify",
       "package": "liquid",
-      "versions": ["5.5.0", "5.6.0"]
+      "versions": ["5.5.0", "5.6.0"],
+      "excludeScenarios": [
+        "unit/tags/extends"
+      ]
     }
   ]
 }
