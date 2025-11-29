@@ -1,113 +1,28 @@
 /**
- * Data Loader Module
+ * Data Loader
  *
- * Loads benchmark test data from SQLite (benchmark.db).
- * Adjusts data size based on scale and generates object structures
- * suitable for Liquid templates.
+ * Loads benchmark data from SQLite and transforms it
+ * into structures suitable for Liquid templates.
  */
 
 import { Database } from "bun:sqlite";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { Scale } from "../../types";
+import type { Scale } from "../types";
+import { SCALE_LIMITS } from "./schema";
+import type {
+  BenchmarkData,
+  CartItem,
+  Collection,
+  Image,
+  Post,
+  Product,
+  User,
+  Variant,
+} from "./types";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const DEFAULT_DB_PATH = join(__dirname, "../../../data/benchmark.db");
-
-/**
- * Data count limits per scale.
- * Corresponds to SCALES in data/schema.ts.
- */
-export const SCALE_LIMITS = {
-  small: { products: 10, collections: 3, cartItems: 3, posts: 3 },
-  medium: { products: 50, collections: 10, cartItems: 10, posts: 10 },
-  large: { products: 200, collections: 30, cartItems: 25, posts: 30 },
-  "2xl": { products: 500, collections: 50, cartItems: 50, posts: 50 },
-} as const;
-
-/**
- * Product data.
- */
-export interface Product {
-  id: number;
-  title: string;
-  price: number;
-  description: string;
-  variants: Variant[];
-  images: Image[];
-}
-
-export interface Variant {
-  id: number;
-  title: string;
-  price: number;
-  available: boolean;
-}
-
-export interface Image {
-  id: number;
-  src: string;
-  alt: string;
-}
-
-/**
- * Collection data.
- */
-export interface Collection {
-  id: number;
-  title: string;
-  description: string;
-  products: Product[];
-}
-
-/**
- * Cart item.
- */
-export interface CartItem {
-  id: number;
-  product: Product;
-  variant: Variant;
-  quantity: number;
-  line_price: number;
-}
-
-/**
- * User data.
- */
-export interface User {
-  id: number;
-  name: string;
-  email: string;
-  street: string;
-  city: string;
-  country: string;
-  zip: string;
-}
-
-/**
- * Blog post.
- */
-export interface Post {
-  id: number;
-  title: string;
-  content: string;
-  author: string;
-  published_at: string;
-  tags: string[];
-}
-
-/**
- * Complete benchmark data.
- * Index signature allows assignment to Record<string, unknown>.
- */
-export interface BenchmarkData {
-  products: Product[];
-  collections: Collection[];
-  cart_items: CartItem[];
-  user: User;
-  posts: Post[];
-  [key: string]: Product[] | Collection[] | CartItem[] | User | Post[];
-}
+const DEFAULT_DB_PATH = join(__dirname, "../../data/benchmark.db");
 
 /**
  * Data Loader Class
@@ -123,8 +38,7 @@ export class DataLoader {
   }
 
   /**
-   * Execute a query and return all rows with type annotation.
-   * Uses SQLQueryBindings for type-safe parameter binding.
+   * Execute a query and return all rows.
    */
   private queryAll<T>(
     sql: string,
@@ -134,8 +48,7 @@ export class DataLoader {
   }
 
   /**
-   * Execute a query and return a single row with type annotation.
-   * Uses SQLQueryBindings for type-safe parameter binding.
+   * Execute a query and return a single row.
    */
   private queryGet<T>(
     sql: string,
@@ -159,9 +72,6 @@ export class DataLoader {
     };
   }
 
-  /**
-   * Load product data.
-   */
   private loadProducts(limit: number): Product[] {
     interface ProductRow {
       id: number;
@@ -181,9 +91,6 @@ export class DataLoader {
     }));
   }
 
-  /**
-   * Load variants for a product.
-   */
   private loadVariants(productId: number): Variant[] {
     interface VariantRow {
       id: number;
@@ -204,16 +111,13 @@ export class DataLoader {
     }));
   }
 
-  /**
-   * Load images for a product.
-   */
   private loadImages(productId: number): Image[] {
-    return this.queryAll<Image>("SELECT id, src, alt FROM images WHERE product_id = ?", productId);
+    return this.queryAll<Image>(
+      "SELECT id, src, alt FROM images WHERE product_id = ?",
+      productId
+    );
   }
 
-  /**
-   * Load collections.
-   */
   private loadCollections(limit: number, productLimit: number): Collection[] {
     interface CollectionRow {
       id: number;
@@ -225,7 +129,6 @@ export class DataLoader {
       limit
     );
 
-    // Cache products to avoid N+1 queries
     const allProducts = this.loadProducts(productLimit);
     const productMap = new Map(allProducts.map((p) => [p.id, p]));
 
@@ -246,9 +149,6 @@ export class DataLoader {
     });
   }
 
-  /**
-   * Load cart items.
-   */
   private loadCartItems(limit: number): CartItem[] {
     interface CartItemRow {
       id: number;
@@ -296,9 +196,6 @@ export class DataLoader {
     }));
   }
 
-  /**
-   * Load user data.
-   */
   private loadUser(): User {
     const user = this.queryGet<User>(
       "SELECT id, name, email, street, city, country, zip FROM users LIMIT 1"
@@ -311,9 +208,6 @@ export class DataLoader {
     return user;
   }
 
-  /**
-   * Load blog posts.
-   */
   private loadPosts(limit: number): Post[] {
     interface PostRow {
       id: number;
@@ -333,9 +227,6 @@ export class DataLoader {
     }));
   }
 
-  /**
-   * Load tags for a post.
-   */
   private loadPostTags(postId: number): string[] {
     interface TagRow {
       name: string;
@@ -348,17 +239,13 @@ export class DataLoader {
     return tags.map((t) => t.name);
   }
 
-  /**
-   * Close the database connection.
-   */
   close(): void {
     this.db.close();
   }
 }
 
 /**
- * Helper function to load data.
- * Automatically closes the database connection when done.
+ * Load benchmark data for the specified scale.
  */
 export function loadData(scale: Scale, dbPath?: string): BenchmarkData {
   const loader = new DataLoader(dbPath);

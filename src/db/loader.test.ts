@@ -1,14 +1,15 @@
 /**
- * Unit tests for data loader
+ * Data Loader Unit Tests
  */
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { DataLoader, loadData, SCALE_LIMITS } from "./loader";
+import { DataLoader, loadData } from "./loader";
+import { SCALE_LIMITS } from "./schema";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const DB_PATH = join(__dirname, "../../../data/benchmark.db");
+const DB_PATH = join(__dirname, "../../data/benchmark.db");
 
 describe("SCALE_LIMITS", () => {
   test("defines all scales", () => {

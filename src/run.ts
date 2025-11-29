@@ -18,7 +18,7 @@ import {
   calculateMetrics,
   listAdapters,
   loadData,
-  loadTemplate,
+  loadScenario,
   runAdapter,
 } from "./lib";
 import {
@@ -189,9 +189,9 @@ async function main(): Promise<void> {
   console.error(`  Warmup:     ${options.warmup}`);
   console.error("");
 
-  // Load template
-  console.error(`Loading template: ${options.template}...`);
-  const template = await loadTemplate(options.template);
+  // Load scenario
+  console.error(`Loading scenario: ${options.template}...`);
+  const template = await loadScenario(options.template);
 
   // Load data
   console.error(`Loading data (scale: ${options.scale})...`);

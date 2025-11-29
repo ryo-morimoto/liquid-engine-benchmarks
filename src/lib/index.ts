@@ -16,7 +16,7 @@ export {
   type AdapterResult,
 } from "./adapter";
 
-// Data module
+// Data module (re-exported from src/db)
 export {
   DataLoader,
   loadData,
@@ -29,7 +29,7 @@ export {
   type Product,
   type User,
   type Variant,
-} from "./data";
+} from "../db";
 
 // Stats module
 export {
@@ -42,16 +42,16 @@ export {
   stddev,
 } from "./stats";
 
-// Template module
+// Scenario module
 export {
-  createTemplateLoader,
-  isTemplateCategory,
-  loadTemplate,
-  loadTemplates,
-  TemplateLoader,
-  type TemplateCategory,
-  type TemplateInfo,
-} from "./template";
+  createScenarioLoader,
+  isScenarioCategory,
+  loadScenario,
+  loadScenarios,
+  ScenarioLoader,
+  type ScenarioCategory,
+  type ScenarioInfo,
+} from "./scenario";
 
 // Validator module
 export {
