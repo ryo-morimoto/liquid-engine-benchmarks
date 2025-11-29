@@ -99,4 +99,4 @@ Scenarios using unsupported features will throw `UnimplementedError` and be skip
 
 ## Data Requirements
 
-See `data/schema.ts` for data structure.
+See `src/db/schema.ts` for DDL and `src/db/types.ts` for data structures.

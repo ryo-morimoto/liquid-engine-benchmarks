@@ -18,12 +18,12 @@ Improve benchmark accuracy with better runtime settings:
 - Ruby: YJIT options
 - New languages: equivalent optimizations
 
-### Add benchmark cases
+### Add benchmark scenarios
 
 Expand test coverage:
 
-- New templates in `templates/<category>/`
-- New data scales in `data/`
+- New scenarios in `scenarios/unit/tags/` or `scenarios/unit/filters/`
+- Combined tests in `scenarios/composite/`
 - Edge cases and real-world scenarios
 
 ### Add new languages
