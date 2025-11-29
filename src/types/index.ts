@@ -9,12 +9,14 @@
 export {
   ADAPTER_NAMES,
   LANGS,
+  RUNTIME_NAMES,
   SCALES,
   isAdapterName,
   isLang,
   isScale,
   type AdapterName,
   type Lang,
+  type RuntimeName,
   type Scale,
 } from "./constants";
 
@@ -45,4 +47,5 @@ export type {
   RunMetadata,
   RunResult,
   RuntimeVersion,
+  ScenarioExclusion,
 } from "./benchmark";

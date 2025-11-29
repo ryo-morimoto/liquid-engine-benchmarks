@@ -1,38 +1,57 @@
 /**
  * Setup CLI Command
  *
- * Generates dependency files (composer.json, Gemfile) from leb.config.json
- * and optionally installs dependencies.
+ * Prepares the benchmark environment:
+ * - Generates dependency files (composer.json, Gemfile)
+ * - Seeds the benchmark database
  *
  * Usage:
- *   bun src/run.ts setup php     # Generate composer.json
- *   bun src/run.ts setup ruby    # Generate Gemfile
- *   bun src/run.ts setup all     # Generate both
+ *   leb setup          # Run all setup (php + ruby + db)
+ *   leb setup php      # Generate composer.json only
+ *   leb setup ruby     # Generate Gemfile only
+ *
+ * For database seeding only, run directly:
+ *   bun src/db/seed.ts
  */
 
+import { join } from "node:path";
 import {
   filterLibrariesByLang,
   getRuntimeVersion,
   loadConfig,
   type ConfigLang,
   type LebConfig,
-  type LibraryConfig,
 } from "../lib";
 
+/**
+ * Setup target options.
+ * - "all": run all setup tasks (default when no args)
+ * - "php": generate composer.json only
+ * - "ruby": generate Gemfile only
+ */
 type SetupTarget = ConfigLang | "all";
 
-const VALID_TARGETS: SetupTarget[] = ["php", "ruby", "all"];
+const VALID_TARGETS: ConfigLang[] = ["php", "ruby"];
+
+const SEED_SCRIPT = join(import.meta.dir, "../db/seed.ts");
 
 /**
  * Parse setup command arguments.
+ * No arguments means "all" (run everything).
  * @param args - CLI arguments (after 'setup' subcommand)
  */
 export function parseArgs_(args: string[]): SetupTarget {
   const target = args[0];
 
-  if (!target || target === "--help" || target === "-h") {
+  // Handle help flag
+  if (target === "--help" || target === "-h") {
     printHelp();
     process.exit(0);
+  }
+
+  // No arguments → run all setup
+  if (!target) {
+    return "all";
   }
 
   if (!isValidTarget(target)) {
@@ -44,8 +63,8 @@ export function parseArgs_(args: string[]): SetupTarget {
   return target;
 }
 
-function isValidTarget(target: string): target is SetupTarget {
-  return VALID_TARGETS.includes(target as SetupTarget);
+function isValidTarget(target: string): target is ConfigLang {
+  return VALID_TARGETS.includes(target as ConfigLang);
 }
 
 /**
@@ -55,20 +74,20 @@ export function printHelp(): void {
   console.log(`
 Setup Command
 
-Generates dependency files from leb.config.json.
+Prepares the benchmark environment.
 
 Usage:
-  bun src/run.ts setup <target>
+  leb setup [target]
 
 Targets:
-  php     Generate composer.json
-  ruby    Generate Gemfile
-  all     Generate both
+  (none)  Run all setup (php + ruby + db)
+  php     Generate composer.json only
+  ruby    Generate Gemfile only
 
 Examples:
-  bun src/run.ts setup php
-  bun src/run.ts setup ruby
-  bun src/run.ts setup all
+  leb setup              # Full setup
+  leb setup php          # PHP dependencies only
+  leb prepare            # Database only
 `);
 }
 
@@ -143,7 +162,7 @@ async function writeIfChanged(path: string, content: string): Promise<boolean> {
 }
 
 /**
- * Setup PHP dependencies.
+ * Setup PHP dependencies - generates composer.json.
  */
 async function setupPhp(config: LebConfig): Promise<void> {
   const content = generateComposerJson(config);
@@ -157,7 +176,7 @@ async function setupPhp(config: LebConfig): Promise<void> {
 }
 
 /**
- * Setup Ruby dependencies.
+ * Setup Ruby dependencies - generates Gemfile.
  */
 async function setupRuby(config: LebConfig): Promise<void> {
   const content = generateGemfile(config);
@@ -167,6 +186,19 @@ async function setupRuby(config: LebConfig): Promise<void> {
     console.log("Generated Gemfile");
   } else {
     console.log("Gemfile is up to date");
+  }
+}
+
+/**
+ * Setup database - seeds benchmark data.
+ * Delegates to src/db/seed.ts for the actual seeding logic.
+ */
+async function setupDb(): Promise<void> {
+  const result = await Bun.$`bun ${SEED_SCRIPT}`.quiet();
+  console.log(result.text());
+
+  if (result.exitCode !== 0) {
+    throw new Error("Database seeding failed");
   }
 }
 
@@ -188,6 +220,7 @@ export async function run(args: string[]): Promise<void> {
     case "all":
       await setupPhp(config);
       await setupRuby(config);
+      await setupDb();
       break;
   }
 

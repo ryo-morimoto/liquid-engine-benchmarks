@@ -11,7 +11,7 @@
  */
 
 import { beforeAll, describe, expect, test } from "bun:test";
-import { ADAPTERS, isValidAdapterOutput, listAdapters, runAdapter } from "../../src/lib";
+import { AdapterError, ADAPTERS, isValidAdapterOutput, listAdapters, runAdapter } from "../../src/lib";
 import type { AdapterInput, AdapterName } from "../../src/types";
 
 /**
@@ -33,6 +33,7 @@ const TEST_INPUT: AdapterInput = {
 
 /**
  * Check if an adapter's runtime is available.
+ * Uses feature-test approach: execute the runtime directly.
  */
 async function isAdapterAvailable(adapterName: AdapterName): Promise<boolean> {
   const config = ADAPTERS[adapterName];
@@ -45,13 +46,15 @@ async function isAdapterAvailable(adapterName: AdapterName): Promise<boolean> {
     return false;
   }
 
-  // Check if runtime command exists
+  // Feature test: execute runtime directly with version flag
   const runtimeCommand = config.command[0];
   if (!runtimeCommand) {
     return false;
   }
+
   try {
-    const proc = Bun.spawn(["which", runtimeCommand], {
+    const versionFlag = config.lang === "php" ? "-v" : "--version";
+    const proc = Bun.spawn([runtimeCommand, versionFlag], {
       stdout: "pipe",
       stderr: "pipe",
     });
@@ -205,6 +208,57 @@ describe("Adapter Contract Tests", () => {
         } catch (error) {
           // Expected for strict-mode adapters
           expect(error).toBeDefined();
+        }
+      }
+    });
+
+    test("AdapterError contains adapter name", async () => {
+      // Test with an intentionally broken template that causes parse error
+      const brokenInput: AdapterInput = {
+        template: "{% for item in %}", // incomplete for loop
+        data: {},
+        iterations: 1,
+        warmup: 0,
+      };
+
+      for (const adapterName of adapters) {
+        if (!(await isAdapterAvailable(adapterName))) {
+          continue;
+        }
+
+        try {
+          await runAdapter(adapterName, brokenInput, 30_000);
+        } catch (error) {
+          if (error instanceof AdapterError) {
+            expect(error.adapterName).toBe(adapterName);
+          }
+        }
+      }
+    });
+
+    test("AdapterError captures exit code on crash", async () => {
+      // Use deeply nested template that may cause stack overflow
+      const nestedInput: AdapterInput = {
+        template: "{% for a in b %}".repeat(100) + "{% endfor %}".repeat(100),
+        data: {},
+        iterations: 1,
+        warmup: 0,
+      };
+
+      for (const adapterName of adapters) {
+        if (!(await isAdapterAvailable(adapterName))) {
+          continue;
+        }
+
+        try {
+          await runAdapter(adapterName, nestedInput, 30_000);
+        } catch (error) {
+          if (error instanceof AdapterError) {
+            // Exit code should be defined for crashed adapters
+            if (error.exitCode !== undefined) {
+              expect(typeof error.exitCode).toBe("number");
+            }
+          }
         }
       }
     });

@@ -36,6 +36,12 @@ export const LANGS = ["php", "ruby", "go", "rust", "javascript"] as const;
 export const ADAPTER_NAMES = ["keepsuit", "kalimatas", "shopify"] as const;
 
 /**
+ * Supported runtime environments as const tuple.
+ * Subset of LANGS that have implemented adapters.
+ */
+export const RUNTIME_NAMES = ["php", "ruby"] as const;
+
+/**
  * Data scales as const tuple.
  * This is the runtime and compile-time source of truth for scale values.
  */
@@ -62,6 +68,12 @@ export type AdapterName = ArrayElement<typeof ADAPTER_NAMES>;
  * Derived from SCALES const tuple using ArrayElement.
  */
 export type Scale = ArrayElement<typeof SCALES>;
+
+/**
+ * Runtime environment names.
+ * Derived from RUNTIME_NAMES const tuple using ArrayElement.
+ */
+export type RuntimeName = ArrayElement<typeof RUNTIME_NAMES>;
 
 // ============================================================================
 // Type Guards (for runtime validation)

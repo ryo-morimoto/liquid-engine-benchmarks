@@ -8,6 +8,8 @@
 // Config module
 export {
   filterLibrariesByLang,
+  getExcludedScenarios,
+  getLibraryConfig,
   getRuntimeVersion,
   loadConfig,
   type BaselineConfig,
@@ -15,6 +17,7 @@ export {
   type LebConfig,
   type LibraryConfig,
   type RuntimeConfig,
+  type ScenarioExclusion,
 } from "./config";
 
 // Adapter module
@@ -75,3 +78,15 @@ export {
   validateWithDetails,
   type ValidationResult,
 } from "./validator";
+
+// Errors module
+export { CliError, ErrorCode, Errors, type CliErrorDetails } from "./errors";
+
+// Environment check module
+export {
+  checkAdapter,
+  checkAdapters,
+  checkAllAdapters,
+  ensureAdapterReady,
+  type CheckResult,
+} from "./env-check";

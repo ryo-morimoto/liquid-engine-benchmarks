@@ -1,44 +1,70 @@
 #!/usr/bin/env bun
 
 /**
- * Liquid Engine Benchmark CLI
+ * Liquid Engine Benchmark CLI (leb)
  *
- * Unified entry point for all CLI commands.
+ * Entry point for benchmark commands.
+ * Follows Unix philosophy: small commands that do one thing well.
  *
  * Usage:
- *   bun src/run.ts <command> [options]
+ *   leb <command> [args] [options]
  *
  * Commands:
- *   bench   Run benchmark for a specific adapter
- *   setup   Generate dependency files from leb.config.json
+ *   bench     Run benchmarks (all or single)
+ *   list      List adapters or scenarios
+ *   prepare   Seed benchmark database
+ *   setup     Prepare environment (dependencies + database)
  */
 
-import { bench, setup } from "./cli";
+import { bench, list, prepare, setup } from "./cli";
 
+/**
+ * Command registry maps command names to their handler functions.
+ */
 const COMMANDS = {
   bench: bench.run,
+  list: list.run,
+  prepare: prepare.run,
   setup: setup.run,
 } as const;
 
 type Command = keyof typeof COMMANDS;
 
+/**
+ * Print main help message.
+ * Lists available commands and common usage patterns.
+ */
 function printHelp(): void {
   console.log(`
-Liquid Engine Benchmark CLI
+leb - Liquid Engine Benchmark CLI
 
 Usage:
-  bun src/run.ts <command> [options]
+  leb <command> [args] [options]
 
 Commands:
-  bench   Run benchmark for a specific adapter
-  setup   Generate dependency files (composer.json, Gemfile)
+  bench     Run benchmarks (all or single)
+  list      List adapters or scenarios
+  prepare   Seed benchmark database
+  setup     Prepare environment (dependencies + database)
 
 Examples:
-  bun src/run.ts bench -a keepsuit -t primitive/variable
-  bun src/run.ts setup php
-  bun src/run.ts setup all
+  # Full setup (generates files + seeds database)
+  leb setup
 
-Run 'bun src/run.ts <command> --help' for command-specific help.
+  # Database only
+  leb prepare
+
+  # Run all benchmarks
+  leb bench
+
+  # Run single benchmark
+  leb bench keepsuit unit/tags/for
+
+  # List and query
+  leb list adapters
+  leb list scenarios -c unit/tags
+
+Run 'leb <command> --help' for command-specific help.
 `);
 }
 

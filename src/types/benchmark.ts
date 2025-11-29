@@ -39,6 +39,19 @@ export interface BaselineConfig {
 }
 
 /**
+ * Scenario exclusion rule.
+ * Can be a simple string (excludes for all versions) or an object with version constraint.
+ */
+export type ScenarioExclusion =
+  | string
+  | {
+      /** Scenario path to exclude */
+      scenario: string;
+      /** Library version for which this exclusion applies */
+      version: SemVer;
+    };
+
+/**
  * Library configuration for benchmarking.
  * Defines a target library with its package info and versions to test.
  */
@@ -51,6 +64,8 @@ export interface LibraryConfig {
   package: string;
   /** Versions to benchmark */
   versions: SemVer[];
+  /** Scenarios to exclude (not supported by this library) */
+  excludeScenarios?: ScenarioExclusion[];
 }
 
 /**
