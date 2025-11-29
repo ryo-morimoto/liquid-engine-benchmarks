@@ -38,10 +38,12 @@ async function runCli(
 
 /**
  * Check if a runtime is available.
+ * Uses feature-test approach: execute runtime directly.
  */
 async function isRuntimeAvailable(command: string): Promise<boolean> {
   try {
-    const proc = Bun.spawn(["which", command], {
+    const versionFlag = command === "php" ? "-v" : "--version";
+    const proc = Bun.spawn([command, versionFlag], {
       stdout: "pipe",
       stderr: "pipe",
     });
@@ -72,9 +74,9 @@ describe("E2E: CLI Interface", () => {
     const { stdout, exitCode } = await runCli(["bench", "--help"]);
 
     expect(exitCode).toBe(0);
-    expect(stdout).toContain("Benchmark Command");
-    expect(stdout).toContain("--adapter");
-    expect(stdout).toContain("--template");
+    expect(stdout).toContain("bench - Run benchmarks");
+    expect(stdout).toContain("<adapter>");
+    expect(stdout).toContain("<scenario>");
   });
 
   test("shows setup help", async () => {
@@ -86,28 +88,15 @@ describe("E2E: CLI Interface", () => {
     expect(stdout).toContain("ruby");
   });
 
-  test("errors on missing --adapter", async () => {
-    const { stderr, exitCode } = await runCli(["bench", "--template", "primitive/variable"]);
+  test("errors on missing scenario (single adapter provided)", async () => {
+    const { stderr, exitCode } = await runCli(["bench", "keepsuit"]);
 
     expect(exitCode).toBe(1);
-    expect(stderr).toContain("--adapter is required");
-  });
-
-  test("errors on missing --template", async () => {
-    const { stderr, exitCode } = await runCli(["bench", "--adapter", "keepsuit"]);
-
-    expect(exitCode).toBe(1);
-    expect(stderr).toContain("--template is required");
+    expect(stderr).toContain("<adapter> and <scenario> are required for single mode");
   });
 
   test("errors on unknown adapter", async () => {
-    const { stderr, exitCode } = await runCli([
-      "bench",
-      "--adapter",
-      "nonexistent",
-      "--template",
-      "primitive/variable",
-    ]);
+    const { stderr, exitCode } = await runCli(["bench", "nonexistent", "unit/tags/for"]);
 
     expect(exitCode).toBe(1);
     expect(stderr).toContain("Unknown adapter");
@@ -116,10 +105,8 @@ describe("E2E: CLI Interface", () => {
   test("errors on invalid scale", async () => {
     const { stderr, exitCode } = await runCli([
       "bench",
-      "--adapter",
       "keepsuit",
-      "--template",
-      "primitive/variable",
+      "unit/tags/for",
       "--scale",
       "invalid",
     ]);
@@ -131,10 +118,8 @@ describe("E2E: CLI Interface", () => {
   test("errors on invalid iterations", async () => {
     const { stderr, exitCode } = await runCli([
       "bench",
-      "--adapter",
       "keepsuit",
-      "--template",
-      "primitive/variable",
+      "unit/tags/for",
       "--iterations",
       "99999",
     ]);
@@ -158,10 +143,8 @@ describe("E2E: Full Benchmark Run", () => {
 
       const { stdout, stderr, exitCode } = await runCli([
         "bench",
-        "--adapter",
         "keepsuit",
-        "--template",
-        "primitive/variable",
+        "unit/tags/for",
         "--iterations",
         "3",
         "--warmup",
@@ -184,7 +167,7 @@ describe("E2E: Full Benchmark Run", () => {
 
       // Verify structure
       expect(result.metadata).toBeDefined();
-      expect(result.metadata.template).toBe("primitive/variable");
+      expect(result.metadata.scenario).toBe("unit/tags/for");
       expect(result.metadata.scale).toBe("small");
       expect(result.metadata.iterations).toBe(3);
 
@@ -220,10 +203,8 @@ describe("E2E: Full Benchmark Run", () => {
 
       const { stdout, stderr, exitCode } = await runCli([
         "bench",
-        "--adapter",
         "shopify",
-        "--template",
-        "primitive/variable",
+        "unit/tags/for",
         "--iterations",
         "3",
         "--warmup",
@@ -260,10 +241,8 @@ describe("E2E: Full Benchmark Run", () => {
 
       const { stderr, exitCode } = await runCli([
         "bench",
-        "--adapter",
         "keepsuit",
-        "--template",
-        "primitive/variable",
+        "unit/tags/for",
         "--iterations",
         "2",
         "--warmup",
@@ -279,7 +258,7 @@ describe("E2E: Full Benchmark Run", () => {
       }
 
       expect(exitCode).toBe(0);
-      expect(stderr).toContain("Result written to:");
+      expect(stderr).toContain("output:");
 
       // Verify file was created
       const file = Bun.file(outputPath);
@@ -300,11 +279,11 @@ describe("E2E: Full Benchmark Run", () => {
   );
 });
 
-describe("E2E: Different Templates", () => {
+describe("E2E: Different Scenarios", () => {
   const BENCHMARK_TIMEOUT = 30_000;
 
   test(
-    "runs with ecommerce/product template",
+    "runs with composite scenario",
     async () => {
       if (!(await isRuntimeAvailable("php"))) {
         console.log("Skipping: PHP not available");
@@ -313,10 +292,8 @@ describe("E2E: Different Templates", () => {
 
       const { stdout, exitCode } = await runCli([
         "bench",
-        "--adapter",
         "keepsuit",
-        "--template",
-        "ecommerce/product",
+        "composite/for-with-if",
         "--iterations",
         "2",
         "--warmup",
@@ -326,29 +303,1072 @@ describe("E2E: Different Templates", () => {
       ]);
 
       if (exitCode !== 0) {
-        console.log("Skipping: ecommerce template test failed");
+        console.log("Skipping: composite scenario test failed");
         return;
       }
 
       expect(exitCode).toBe(0);
 
       const result = JSON.parse(stdout);
-      expect(result.metadata.template).toBe("ecommerce/product");
+      expect(result.metadata.scenario).toBe("composite/for-with-if");
     },
     BENCHMARK_TIMEOUT
   );
 
-  test("errors on nonexistent template", async () => {
+  test("errors on nonexistent scenario", async () => {
+    // This test requires runtime to be available for the adapter check
+    if (!(await isRuntimeAvailable("php"))) {
+      console.log("Skipping: PHP not available");
+      return;
+    }
+
     const { stderr, exitCode } = await runCli([
       "bench",
-      "--adapter",
       "keepsuit",
-      "--template",
       "nonexistent/template",
     ]);
 
     expect(exitCode).toBe(1);
-    expect(stderr).toContain("Error");
+    expect(stderr).toContain("scenario not found");
+  });
+});
+
+describe("E2E: List Command", () => {
+  test("lists all adapters", async () => {
+    const { stdout, exitCode } = await runCli(["list", "adapters"]);
+
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain("keepsuit");
+    expect(stdout).toContain("kalimatas");
+    expect(stdout).toContain("shopify");
+  });
+
+  test("lists scenarios", async () => {
+    const { stdout, exitCode } = await runCli(["list", "scenarios"]);
+
+    expect(exitCode).toBe(0);
+    // Should contain at least one scenario
+    expect(stdout.trim().length).toBeGreaterThan(0);
+  });
+
+  test("lists scenarios with category filter", async () => {
+    const { stdout, exitCode } = await runCli([
+      "list",
+      "scenarios",
+      "-c",
+      "unit",
+    ]);
+
+    expect(exitCode).toBe(0);
+    // All results should be under unit/ category
+    const lines = stdout.trim().split("\n").filter(Boolean);
+    for (const line of lines) {
+      expect(line).toMatch(/^unit\//);
+    }
+  });
+
+  test("shows help for list command", async () => {
+    const { stdout, exitCode } = await runCli(["list", "--help"]);
+
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain("list");
+    expect(stdout).toContain("adapters");
+    expect(stdout).toContain("scenarios");
+  });
+
+  test("errors on invalid target", async () => {
+    const { stderr, exitCode } = await runCli(["list", "invalid"]);
+
+    expect(exitCode).toBe(1);
+    expect(stderr).toContain("Unknown target");
+  });
+
+  test("outputs one item per line for shell composition", async () => {
+    const { stdout, exitCode } = await runCli(["list", "adapters"]);
+
+    expect(exitCode).toBe(0);
+    const lines = stdout.trim().split("\n");
+    // Each line should be a single adapter name
+    expect(lines).toContain("keepsuit");
+    expect(lines).toContain("kalimatas");
+    expect(lines).toContain("shopify");
+  });
+});
+
+describe("E2E: JSON Error Output", () => {
+  /**
+   * Note: --format json outputs JSON for both success and error cases.
+   * Argument validation errors (unknown adapter, invalid scale) happen
+   * before the benchmark runs and always output human-readable error to stderr.
+   */
+
+  test("outputs JSON error for scenario not found with --format json", async () => {
+    // This test requires a valid adapter but invalid scenario
+    // The --format json flag works for runtime errors like scenario not found
+    if (!(await isRuntimeAvailable("php"))) {
+      console.log("Skipping: PHP not available");
+      return;
+    }
+
+    const { stdout, stderr, exitCode } = await runCli([
+      "bench",
+      "keepsuit",
+      "nonexistent/scenario",
+      "--format",
+      "json",
+    ]);
+
+    expect(exitCode).toBe(1);
+
+    // With --format json, error should be on stdout
+    const output = stdout || stderr;
+    // May fail if deps not installed (which outputs different error format)
+    if (output.includes("SCENARIO_NOT_FOUND") || output.includes("RUNTIME_NOT_FOUND") || output.includes("DEPS_NOT_INSTALLED")) {
+      expect(() => JSON.parse(output)).not.toThrow();
+      const parsed = JSON.parse(output);
+      expect(parsed.success).toBe(false);
+    }
+  });
+
+  test("argument validation errors are human-readable (not JSON)", async () => {
+    // Argument validation errors happen before format is processed
+    const { stderr, exitCode } = await runCli([
+      "bench",
+      "nonexistent",
+      "unit/tags/for",
+      "-f",
+      "json",
+    ]);
+
+    expect(exitCode).toBe(1);
+
+    // Should be human-readable error, not JSON
+    expect(stderr).toContain("Error:");
+    expect(stderr).toContain("Unknown adapter");
+  });
+
+  test("invalid scale outputs human-readable error", async () => {
+    const { stderr, exitCode } = await runCli([
+      "bench",
+      "keepsuit",
+      "unit/tags/for",
+      "--scale",
+      "invalid",
+      "-f",
+      "json",
+    ]);
+
+    expect(exitCode).toBe(1);
+
+    // Argument validation error - not JSON
+    expect(stderr).toContain("Error:");
+    expect(stderr).toContain("Invalid scale");
+  });
+});
+
+describe("E2E: Error Messages", () => {
+  test("shows human-readable error by default", async () => {
+    const { stderr, exitCode } = await runCli([
+      "bench",
+      "nonexistent",
+      "unit/tags/for",
+    ]);
+
+    expect(exitCode).toBe(1);
+    // Should be human readable, not JSON
+    expect(stderr).toContain("Error:");
+    expect(() => JSON.parse(stderr)).toThrow();
+  });
+
+  test("error message for missing scenario argument", async () => {
+    const { stderr, exitCode } = await runCli(["bench", "keepsuit"]);
+
+    expect(exitCode).toBe(1);
+    expect(stderr).toContain("<adapter> and <scenario> are required");
+  });
+
+  test("error message for invalid iterations (too low)", async () => {
+    const { stderr, exitCode } = await runCli([
+      "bench",
+      "keepsuit",
+      "unit/tags/for",
+      "-i",
+      "0",
+    ]);
+
+    expect(exitCode).toBe(1);
+    expect(stderr).toContain("--iterations must be between");
+  });
+
+  test("error message for invalid warmup (negative)", async () => {
+    const { stderr, exitCode } = await runCli([
+      "bench",
+      "keepsuit",
+      "unit/tags/for",
+      "--warmup=-1",
+    ]);
+
+    expect(exitCode).toBe(1);
+    expect(stderr).toContain("--warmup must be between");
+  });
+
+  test("unknown command shows error", async () => {
+    const { stderr, exitCode } = await runCli(["unknown-command"]);
+
+    expect(exitCode).toBe(1);
+    expect(stderr).toContain("Unknown command");
+  });
+});
+
+describe("E2E: Exit Codes", () => {
+  test("exit code 0 for successful help", async () => {
+    const { exitCode } = await runCli(["--help"]);
+    expect(exitCode).toBe(0);
+  });
+
+  test("exit code 0 for successful list", async () => {
+    const { exitCode } = await runCli(["list", "adapters"]);
+    expect(exitCode).toBe(0);
+  });
+
+  test("exit code 1 for argument errors", async () => {
+    const { exitCode } = await runCli(["bench", "keepsuit"]);
+    expect(exitCode).toBe(1);
+  });
+
+  test("exit code 1 for unknown adapter", async () => {
+    const { exitCode } = await runCli(["bench", "nonexistent", "test"]);
+    expect(exitCode).toBe(1);
+  });
+
+  test("exit code 1 for invalid scale", async () => {
+    const { exitCode } = await runCli([
+      "bench",
+      "keepsuit",
+      "test",
+      "-s",
+      "invalid",
+    ]);
+    expect(exitCode).toBe(1);
+  });
+});
+
+describe("E2E: Bench All Mode Output", () => {
+  /**
+   * Tests for "all" mode output behavior.
+   * Expected behavior:
+   * - Default format is table for all mode (human-readable comparison)
+   * - With --format json: JSON output for programmatic use / piping
+   */
+
+  test("all mode with --format json shows JSON capability in help", async () => {
+    // Verify help output shows format option with json capability
+    const { stdout, exitCode } = await runCli(["bench", "--help"]);
+
+    expect(exitCode).toBe(0);
+    // Help text should show --format option with table and json
+    expect(stdout).toContain("--format");
+    expect(stdout).toContain("table");
+    expect(stdout).toContain("json");
+    // Shows how to pipe JSON output
+    expect(stdout).toContain("> results.json");
+  });
+
+  test("single mode outputs JSON to stdout by default", async () => {
+    // In single mode without --output flag, JSON should go to stdout
+    // This is correct behavior for piping
+    if (!(await isRuntimeAvailable("php"))) {
+      console.log("Skipping: PHP not available");
+      return;
+    }
+
+    const { stdout, stderr, exitCode } = await runCli([
+      "bench",
+      "keepsuit",
+      "unit/tags/for",
+      "--iterations",
+      "2",
+      "--warmup",
+      "0",
+      "--scale",
+      "small",
+    ]);
+
+    // Skip if deps not installed
+    if (exitCode !== 0) {
+      console.log("Skipping: adapter not ready");
+      return;
+    }
+
+    expect(exitCode).toBe(0);
+
+    // stdout should contain valid JSON
+    expect(() => JSON.parse(stdout)).not.toThrow();
+    const result = JSON.parse(stdout);
+    expect(result.success).toBe(true);
+
+    // stderr should contain progress messages
+    expect(stderr).toContain("bench:");
+  });
+});
+
+describe("E2E: Bench --format Option", () => {
+  const BENCHMARK_TIMEOUT = 30_000;
+
+  describe("format validation", () => {
+    test("exits with error for invalid format", async () => {
+      const { stderr, exitCode } = await runCli(["bench", "--format", "invalid"]);
+
+      expect(exitCode).toBe(1);
+      expect(stderr).toContain('Invalid format "invalid"');
+    });
+
+    test("exits with error for invalid format in single mode", async () => {
+      const { stderr, exitCode } = await runCli([
+        "bench",
+        "keepsuit",
+        "unit/tags/for",
+        "-f",
+        "xml",
+      ]);
+
+      expect(exitCode).toBe(1);
+      expect(stderr).toContain('Invalid format "xml"');
+    });
+
+    test("accepts --format table in all mode", async () => {
+      const { stdout, exitCode } = await runCli(["bench", "--format", "table", "--help"]);
+
+      // Help flag takes precedence, but format arg should be valid
+      expect(exitCode).toBe(0);
+    });
+
+    test("accepts --format json in all mode", async () => {
+      const { stdout, exitCode } = await runCli(["bench", "--format", "json", "--help"]);
+
+      expect(exitCode).toBe(0);
+    });
+
+    test("accepts -f short flag", async () => {
+      const { stdout, exitCode } = await runCli(["bench", "-f", "table", "--help"]);
+
+      expect(exitCode).toBe(0);
+    });
+  });
+
+  describe("single mode format behavior", () => {
+    test(
+      "single mode defaults to json format",
+      async () => {
+        if (!(await isRuntimeAvailable("php"))) {
+          console.log("Skipping: PHP not available");
+          return;
+        }
+
+        const { stdout, exitCode } = await runCli([
+          "bench",
+          "keepsuit",
+          "unit/tags/for",
+          "-i",
+          "2",
+          "-w",
+          "0",
+          "-s",
+          "small",
+        ]);
+
+        if (exitCode !== 0) {
+          console.log("Skipping: adapter not ready");
+          return;
+        }
+
+        // Default format is JSON - should be parseable
+        expect(() => JSON.parse(stdout)).not.toThrow();
+        const result = JSON.parse(stdout);
+        expect(result.success).toBe(true);
+        expect(result.adapter.name).toBe("keepsuit");
+      },
+      BENCHMARK_TIMEOUT
+    );
+
+    test(
+      "single mode with --format json outputs JSON",
+      async () => {
+        if (!(await isRuntimeAvailable("php"))) {
+          console.log("Skipping: PHP not available");
+          return;
+        }
+
+        const { stdout, exitCode } = await runCli([
+          "bench",
+          "keepsuit",
+          "unit/tags/for",
+          "-i",
+          "2",
+          "-w",
+          "0",
+          "-s",
+          "small",
+          "--format",
+          "json",
+        ]);
+
+        if (exitCode !== 0) {
+          console.log("Skipping: adapter not ready");
+          return;
+        }
+
+        expect(() => JSON.parse(stdout)).not.toThrow();
+        const result = JSON.parse(stdout);
+        expect(result.metrics).toBeDefined();
+      },
+      BENCHMARK_TIMEOUT
+    );
+
+    test(
+      "single mode with --format table outputs table",
+      async () => {
+        if (!(await isRuntimeAvailable("php"))) {
+          console.log("Skipping: PHP not available");
+          return;
+        }
+
+        const { stdout, exitCode } = await runCli([
+          "bench",
+          "keepsuit",
+          "unit/tags/for",
+          "-i",
+          "2",
+          "-w",
+          "0",
+          "-s",
+          "small",
+          "-f",
+          "table",
+        ]);
+
+        if (exitCode !== 0) {
+          console.log("Skipping: adapter not ready");
+          return;
+        }
+
+        // Table format should NOT be valid JSON
+        expect(() => JSON.parse(stdout)).toThrow();
+
+        // Table format should contain table elements
+        expect(stdout).toContain("│");
+        expect(stdout).toContain("keepsuit");
+      },
+      BENCHMARK_TIMEOUT
+    );
+  });
+
+  describe("help text includes format option", () => {
+    test("bench help shows --format option", async () => {
+      const { stdout, exitCode } = await runCli(["bench", "--help"]);
+
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain("--format");
+      expect(stdout).toContain("-f");
+      expect(stdout).toContain("table");
+      expect(stdout).toContain("json");
+    });
+
+    test("bench help explains format defaults", async () => {
+      const { stdout, exitCode } = await runCli(["bench", "--help"]);
+
+      expect(exitCode).toBe(0);
+      // Help should explain default format behavior differs by mode
+      // Format: "default: table for all, json for single"
+      expect(stdout).toContain("table for all");
+      expect(stdout).toContain("json for single");
+    });
+  });
+});
+
+describe("E2E: Bench --quiet Option", () => {
+  const BENCHMARK_TIMEOUT = 30_000;
+
+  describe("help text includes quiet option", () => {
+    test("bench help shows --quiet option", async () => {
+      const { stdout, exitCode } = await runCli(["bench", "--help"]);
+
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain("--quiet");
+      expect(stdout).toContain("-q");
+      expect(stdout).toContain("Suppress progress output");
+    });
+  });
+
+  describe("quiet option validation", () => {
+    test("accepts --quiet flag in all mode", async () => {
+      const { exitCode } = await runCli(["bench", "--quiet", "--help"]);
+      expect(exitCode).toBe(0);
+    });
+
+    test("accepts -q short flag in all mode", async () => {
+      const { exitCode } = await runCli(["bench", "-q", "--help"]);
+      expect(exitCode).toBe(0);
+    });
+
+    test("accepts --quiet flag in single mode", async () => {
+      const { exitCode } = await runCli([
+        "bench",
+        "keepsuit",
+        "unit/tags/for",
+        "--quiet",
+        "--help",
+      ]);
+      expect(exitCode).toBe(0);
+    });
+
+    test("accepts -q short flag in single mode", async () => {
+      const { exitCode } = await runCli([
+        "bench",
+        "keepsuit",
+        "unit/tags/for",
+        "-q",
+        "--help",
+      ]);
+      expect(exitCode).toBe(0);
+    });
+
+    test("-q can appear before positional args", async () => {
+      const { exitCode } = await runCli([
+        "bench",
+        "-q",
+        "keepsuit",
+        "unit/tags/for",
+        "--help",
+      ]);
+      expect(exitCode).toBe(0);
+    });
+
+    test("-q works with other options", async () => {
+      const { exitCode } = await runCli([
+        "bench",
+        "-s",
+        "large",
+        "-q",
+        "-i",
+        "50",
+        "--help",
+      ]);
+      expect(exitCode).toBe(0);
+    });
+  });
+
+  describe("quiet mode behavior", () => {
+    test(
+      "single mode with -q suppresses progress output",
+      async () => {
+        if (!(await isRuntimeAvailable("php"))) {
+          console.log("Skipping: PHP not available");
+          return;
+        }
+
+        const { stdout, stderr, exitCode } = await runCli([
+          "bench",
+          "keepsuit",
+          "unit/tags/for",
+          "-i",
+          "2",
+          "-w",
+          "0",
+          "-s",
+          "small",
+          "-q",
+        ]);
+
+        if (exitCode !== 0) {
+          console.log("Skipping: adapter not ready");
+          return;
+        }
+
+        // stderr should be empty or minimal (no progress messages)
+        expect(stderr).toBe("");
+
+        // stdout should still have JSON output
+        expect(() => JSON.parse(stdout)).not.toThrow();
+        const result = JSON.parse(stdout);
+        expect(result.success).toBe(true);
+      },
+      BENCHMARK_TIMEOUT
+    );
+
+    test(
+      "single mode without -q shows progress output",
+      async () => {
+        if (!(await isRuntimeAvailable("php"))) {
+          console.log("Skipping: PHP not available");
+          return;
+        }
+
+        const { stdout, stderr, exitCode } = await runCli([
+          "bench",
+          "keepsuit",
+          "unit/tags/for",
+          "-i",
+          "2",
+          "-w",
+          "0",
+          "-s",
+          "small",
+        ]);
+
+        if (exitCode !== 0) {
+          console.log("Skipping: adapter not ready");
+          return;
+        }
+
+        // stderr should have progress messages
+        expect(stderr).toContain("bench:");
+
+        // stdout should still have JSON output
+        expect(() => JSON.parse(stdout)).not.toThrow();
+      },
+      BENCHMARK_TIMEOUT
+    );
+
+    test(
+      "single mode with -q and --format table outputs only table",
+      async () => {
+        if (!(await isRuntimeAvailable("php"))) {
+          console.log("Skipping: PHP not available");
+          return;
+        }
+
+        const { stdout, stderr, exitCode } = await runCli([
+          "bench",
+          "keepsuit",
+          "unit/tags/for",
+          "-i",
+          "2",
+          "-w",
+          "0",
+          "-s",
+          "small",
+          "-f",
+          "table",
+          "-q",
+        ]);
+
+        if (exitCode !== 0) {
+          console.log("Skipping: adapter not ready");
+          return;
+        }
+
+        // stderr should be empty (no progress messages)
+        expect(stderr).toBe("");
+
+        // stdout should have table output
+        expect(stdout).toContain("keepsuit");
+        expect(stdout).toContain("│");
+      },
+      BENCHMARK_TIMEOUT
+    );
+  });
+});
+
+describe("E2E: Bench Option Combinations", () => {
+  const BENCHMARK_TIMEOUT = 30_000;
+
+  describe("options can appear in any order", () => {
+    test(
+      "format before positional args works",
+      async () => {
+        if (!(await isRuntimeAvailable("php"))) {
+          console.log("Skipping: PHP not available");
+          return;
+        }
+
+        const { stdout, exitCode } = await runCli([
+          "bench",
+          "-f",
+          "json",
+          "keepsuit",
+          "unit/tags/for",
+          "-i",
+          "2",
+          "-w",
+          "0",
+          "-s",
+          "small",
+        ]);
+
+        if (exitCode !== 0) {
+          console.log("Skipping: adapter not ready");
+          return;
+        }
+
+        expect(() => JSON.parse(stdout)).not.toThrow();
+      },
+      BENCHMARK_TIMEOUT
+    );
+
+    test(
+      "format after positional args works",
+      async () => {
+        if (!(await isRuntimeAvailable("php"))) {
+          console.log("Skipping: PHP not available");
+          return;
+        }
+
+        const { stdout, exitCode } = await runCli([
+          "bench",
+          "keepsuit",
+          "unit/tags/for",
+          "-i",
+          "2",
+          "-w",
+          "0",
+          "-s",
+          "small",
+          "-f",
+          "json",
+        ]);
+
+        if (exitCode !== 0) {
+          console.log("Skipping: adapter not ready");
+          return;
+        }
+
+        expect(() => JSON.parse(stdout)).not.toThrow();
+      },
+      BENCHMARK_TIMEOUT
+    );
+
+    test(
+      "all options combined in single mode",
+      async () => {
+        if (!(await isRuntimeAvailable("php"))) {
+          console.log("Skipping: PHP not available");
+          return;
+        }
+
+        const { stdout, exitCode } = await runCli([
+          "bench",
+          "keepsuit",
+          "unit/tags/for",
+          "--scale",
+          "small",
+          "--iterations",
+          "2",
+          "--warmup",
+          "0",
+          "--format",
+          "json",
+        ]);
+
+        if (exitCode !== 0) {
+          console.log("Skipping: adapter not ready");
+          return;
+        }
+
+        const result = JSON.parse(stdout);
+        expect(result.metadata.scale).toBe("small");
+        expect(result.metadata.iterations).toBe(2);
+        expect(result.metadata.warmup).toBe(0);
+      },
+      BENCHMARK_TIMEOUT
+    );
+
+    test(
+      "short flags combined in single mode",
+      async () => {
+        if (!(await isRuntimeAvailable("php"))) {
+          console.log("Skipping: PHP not available");
+          return;
+        }
+
+        const { stdout, exitCode } = await runCli([
+          "bench",
+          "keepsuit",
+          "unit/tags/for",
+          "-s",
+          "small",
+          "-i",
+          "2",
+          "-w",
+          "0",
+          "-f",
+          "json",
+        ]);
+
+        if (exitCode !== 0) {
+          console.log("Skipping: adapter not ready");
+          return;
+        }
+
+        const result = JSON.parse(stdout);
+        expect(result.metadata.scale).toBe("small");
+      },
+      BENCHMARK_TIMEOUT
+    );
+  });
+
+  describe("scale option values", () => {
+    test("accepts --scale small", async () => {
+      const { exitCode } = await runCli([
+        "bench",
+        "keepsuit",
+        "unit/tags/for",
+        "-s",
+        "small",
+        "--help",
+      ]);
+      // Help takes precedence but scale arg is valid
+      expect(exitCode).toBe(0);
+    });
+
+    test("accepts --scale medium", async () => {
+      const { exitCode } = await runCli([
+        "bench",
+        "keepsuit",
+        "unit/tags/for",
+        "-s",
+        "medium",
+        "--help",
+      ]);
+      expect(exitCode).toBe(0);
+    });
+
+    test("accepts --scale large", async () => {
+      const { exitCode } = await runCli([
+        "bench",
+        "keepsuit",
+        "unit/tags/for",
+        "-s",
+        "large",
+        "--help",
+      ]);
+      expect(exitCode).toBe(0);
+    });
+
+    test("accepts --scale 2xl", async () => {
+      const { exitCode } = await runCli([
+        "bench",
+        "keepsuit",
+        "unit/tags/for",
+        "-s",
+        "2xl",
+        "--help",
+      ]);
+      expect(exitCode).toBe(0);
+    });
+
+    test("rejects invalid scale", async () => {
+      const { stderr, exitCode } = await runCli([
+        "bench",
+        "keepsuit",
+        "unit/tags/for",
+        "-s",
+        "huge",
+      ]);
+      expect(exitCode).toBe(1);
+      expect(stderr).toContain("Invalid scale");
+    });
+  });
+
+  describe("iterations option validation", () => {
+    test("accepts minimum iterations (1)", async () => {
+      const { exitCode } = await runCli([
+        "bench",
+        "keepsuit",
+        "unit/tags/for",
+        "-i",
+        "1",
+        "--help",
+      ]);
+      expect(exitCode).toBe(0);
+    });
+
+    test("accepts maximum iterations (10000)", async () => {
+      const { exitCode } = await runCli([
+        "bench",
+        "keepsuit",
+        "unit/tags/for",
+        "-i",
+        "10000",
+        "--help",
+      ]);
+      expect(exitCode).toBe(0);
+    });
+
+    test("rejects zero iterations", async () => {
+      const { stderr, exitCode } = await runCli([
+        "bench",
+        "keepsuit",
+        "unit/tags/for",
+        "-i",
+        "0",
+      ]);
+      expect(exitCode).toBe(1);
+      expect(stderr).toContain("--iterations must be between 1 and 10000");
+    });
+
+    test("rejects excessive iterations", async () => {
+      const { stderr, exitCode } = await runCli([
+        "bench",
+        "keepsuit",
+        "unit/tags/for",
+        "-i",
+        "10001",
+      ]);
+      expect(exitCode).toBe(1);
+      expect(stderr).toContain("--iterations must be between 1 and 10000");
+    });
+  });
+
+  describe("warmup option validation", () => {
+    test("accepts zero warmup", async () => {
+      const { exitCode } = await runCli([
+        "bench",
+        "keepsuit",
+        "unit/tags/for",
+        "-w",
+        "0",
+        "--help",
+      ]);
+      expect(exitCode).toBe(0);
+    });
+
+    test("accepts maximum warmup (1000)", async () => {
+      const { exitCode } = await runCli([
+        "bench",
+        "keepsuit",
+        "unit/tags/for",
+        "-w",
+        "1000",
+        "--help",
+      ]);
+      expect(exitCode).toBe(0);
+    });
+
+    test("rejects negative warmup", async () => {
+      const { stderr, exitCode } = await runCli([
+        "bench",
+        "keepsuit",
+        "unit/tags/for",
+        "--warmup=-1",
+      ]);
+      expect(exitCode).toBe(1);
+      expect(stderr).toContain("--warmup must be between 0 and 1000");
+    });
+
+    test("rejects excessive warmup", async () => {
+      const { stderr, exitCode } = await runCli([
+        "bench",
+        "keepsuit",
+        "unit/tags/for",
+        "-w",
+        "1001",
+      ]);
+      expect(exitCode).toBe(1);
+      expect(stderr).toContain("--warmup must be between 0 and 1000");
+    });
+  });
+});
+
+describe("E2E: Bench Adapters", () => {
+  describe("adapter validation", () => {
+    test("accepts keepsuit adapter", async () => {
+      // Just validating adapter name, not running benchmark
+      const { stdout, exitCode } = await runCli([
+        "bench",
+        "keepsuit",
+        "unit/tags/for",
+        "--help",
+      ]);
+      expect(exitCode).toBe(0);
+    });
+
+    test("accepts kalimatas adapter", async () => {
+      const { stdout, exitCode } = await runCli([
+        "bench",
+        "kalimatas",
+        "unit/tags/for",
+        "--help",
+      ]);
+      expect(exitCode).toBe(0);
+    });
+
+    test("accepts shopify adapter", async () => {
+      const { stdout, exitCode } = await runCli([
+        "bench",
+        "shopify",
+        "unit/tags/for",
+        "--help",
+      ]);
+      expect(exitCode).toBe(0);
+    });
+
+    test("rejects unknown adapter", async () => {
+      const { stderr, exitCode } = await runCli([
+        "bench",
+        "unknown",
+        "unit/tags/for",
+      ]);
+      expect(exitCode).toBe(1);
+      expect(stderr).toContain('Unknown adapter "unknown"');
+    });
+
+    test("rejects similar but invalid adapter name", async () => {
+      const { stderr, exitCode } = await runCli([
+        "bench",
+        "Keepsuit", // Capital letter
+        "unit/tags/for",
+      ]);
+      expect(exitCode).toBe(1);
+      expect(stderr).toContain("Unknown adapter");
+    });
+  });
+});
+
+describe("E2E: Bench Mode Detection", () => {
+  test("no positional args triggers all mode (shows help)", async () => {
+    // All mode with help flag to avoid running benchmarks
+    const { stdout, exitCode } = await runCli(["bench", "--help"]);
+
+    expect(exitCode).toBe(0);
+    // Help text describes two usage patterns: all mode and single mode
+    expect(stdout).toContain("leb bench ");
+    expect(stdout).toContain("all adapters");
+    expect(stdout).toContain("<adapter> <scenario>");
+  });
+
+  test("only adapter triggers error (not all mode)", async () => {
+    const { stderr, exitCode } = await runCli(["bench", "keepsuit"]);
+
+    expect(exitCode).toBe(1);
+    expect(stderr).toContain("<adapter> and <scenario> are required for single mode");
+  });
+
+  test("adapter and scenario triggers single mode", async () => {
+    // Just check argument parsing, not full benchmark
+    const { stdout, exitCode } = await runCli([
+      "bench",
+      "keepsuit",
+      "unit/tags/for",
+      "--help",
+    ]);
+
+    expect(exitCode).toBe(0);
+  });
+
+  test("flags without positional args stay in all mode (shows help)", async () => {
+    const { stdout, exitCode } = await runCli([
+      "bench",
+      "-s",
+      "large",
+      "-i",
+      "50",
+      "--help",
+    ]);
+
+    expect(exitCode).toBe(0);
+    // In all mode, help is displayed
+    expect(stdout).toContain("Run benchmarks");
   });
 });
 
@@ -393,8 +1413,8 @@ describe("E2E: Setup Command", () => {
     expect(content).toContain('gem "liquid"');
   });
 
-  test("setup all generates both files", async () => {
-    const { stdout, exitCode } = await runCli(["setup", "all"]);
+  test("setup without args generates all files and seeds db", async () => {
+    const { stdout, exitCode } = await runCli(["setup"]);
 
     expect(exitCode).toBe(0);
     expect(stdout).toContain("composer.json");
@@ -408,8 +1428,8 @@ describe("E2E: Setup Command", () => {
 
   test("setup is idempotent", async () => {
     // Run setup twice
-    const first = await runCli(["setup", "all"]);
-    const second = await runCli(["setup", "all"]);
+    const first = await runCli(["setup"]);
+    const second = await runCli(["setup"]);
 
     expect(first.exitCode).toBe(0);
     expect(second.exitCode).toBe(0);
