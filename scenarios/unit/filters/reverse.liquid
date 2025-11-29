@@ -2,4 +2,4 @@
 Unit test: reverse filter
 Reverse array order
 {%- endcomment -%}
-{{ items | reverse | map: 'name' | join: ', ' }}
+{{ products | reverse | map: 'title' | join: ', ' }}

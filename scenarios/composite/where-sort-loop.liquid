@@ -2,7 +2,8 @@
 Composite test: filter then loop
 Array filtering and sorting before iteration
 {%- endcomment -%}
-{% assign available = items | where: 'available', true | sort: 'price' %}
-{% for item in available %}
-{{ item.name }}: {{ item.price }}
+{% assign product = products | first %}
+{% assign available = product.variants | where: 'available', true | sort: 'price' %}
+{% for variant in available %}
+{{ variant.title }}: {{ variant.price }}
 {% endfor %}

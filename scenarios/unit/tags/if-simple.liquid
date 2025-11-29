@@ -2,8 +2,9 @@
 Unit test: simple if condition
 Measures basic conditional evaluation
 {%- endcomment -%}
-{% if product.available %}
-{{ product.name }} is available
+{% assign product = products | first %}
+{% if product.price > 0 %}
+{{ product.title }} is available
 {% else %}
-{{ product.name }} is out of stock
+{{ product.title }} is out of stock
 {% endif %}

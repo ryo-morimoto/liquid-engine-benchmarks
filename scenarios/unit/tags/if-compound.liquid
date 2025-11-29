@@ -2,18 +2,20 @@
 Unit test: compound conditions with and/or
 Measures performance of complex boolean expressions
 {%- endcomment -%}
-{% if product.available and product.price > 0 %}
+{% assign product = products | first %}
+{% assign variant = product.variants | first %}
+{% if variant.available and product.price > 0 %}
 Available for purchase
 {% endif %}
 
-{% if product.on_sale or product.featured %}
+{% if product.price > 100 or variant.available %}
 Special product
 {% endif %}
 
-{% if product.available and product.price > 50 and product.inventory > 10 %}
+{% if variant.available and product.price > 50 and variant.price > 10 %}
 Well stocked premium item
 {% endif %}
 
-{% if product.type == "shirt" or product.type == "pants" or product.type == "shoes" %}
-Clothing item
+{% if product.title contains "Product" or product.title contains "Item" or product.description contains "quality" %}
+Featured item
 {% endif %}

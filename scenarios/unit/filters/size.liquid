@@ -2,5 +2,6 @@
 Unit test: size filter
 Get array/string length
 {%- endcomment -%}
-Total items: {{ items | size }}
-Name length: {{ product.name | size }}
+{% assign product = products | first %}
+Total products: {{ products | size }}
+Title length: {{ product.title | size }}

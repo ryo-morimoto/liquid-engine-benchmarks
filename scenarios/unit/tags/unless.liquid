@@ -2,6 +2,8 @@
 Unit test: unless tag
 Measures negated conditional evaluation
 {%- endcomment -%}
-{% unless product.sold_out %}
-{{ product.name }} - {{ product.price }}
+{% assign product = products | first %}
+{% assign variant = product.variants | first %}
+{% unless variant.available == false %}
+{{ product.title }} - {{ product.price }}
 {% endunless %}

@@ -2,4 +2,5 @@
 Unit test: filter chaining
 Multiple filters in sequence
 {%- endcomment -%}
-{{ items | where: 'available', true | sort: 'price' | map: 'name' | join: ', ' }}
+{% assign product = products | first %}
+{{ product.variants | where: 'available', true | sort: 'price' | map: 'title' | join: ', ' }}

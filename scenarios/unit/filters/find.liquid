@@ -3,5 +3,6 @@ Unit test: find filter
 Find first matching element
 Support: shopify >=5.0, keepsuit >=2.0
 {%- endcomment -%}
-{% assign item = items | find: 'type', 'featured' %}
-{{ item.name }}
+{% assign product = products | first %}
+{% assign variant = product.variants | find: 'available', true %}
+{{ variant.title }}

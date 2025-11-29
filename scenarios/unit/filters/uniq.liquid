@@ -2,5 +2,5 @@
 Unit test: uniq filter
 Remove duplicates from array
 {%- endcomment -%}
-{% assign types = items | map: 'type' | uniq %}
-{{ types | join: ', ' }}
+{% assign prices = products | map: 'price' | uniq %}
+{{ prices | join: ', ' }}

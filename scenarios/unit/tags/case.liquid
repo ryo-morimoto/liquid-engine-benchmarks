@@ -2,15 +2,17 @@
 Unit test: case/when tag
 Measures switch-style conditional performance
 {%- endcomment -%}
-{% case product.type %}
-  {% when "shirt" %}
-Apparel: {{ product.name }}
-  {% when "electronics" %}
-Tech: {{ product.name }}
-  {% when "food" %}
-Grocery: {{ product.name }}
-  {% when "book" %}
-Media: {{ product.name }}
+{% assign product = products | first %}
+{% assign price_range = product.price | divided_by: 50 %}
+{% case price_range %}
+  {% when 0 %}
+Budget: {{ product.title }}
+  {% when 1 %}
+Mid-range: {{ product.title }}
+  {% when 2 %}
+Premium: {{ product.title }}
+  {% when 3 %}
+Luxury: {{ product.title }}
   {% else %}
-Other: {{ product.name }}
+Ultra: {{ product.title }}
 {% endcase %}

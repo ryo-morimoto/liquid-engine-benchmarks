@@ -3,5 +3,6 @@ Unit test: echo tag
 Alternative syntax for output
 Support: shopify >=5.0, keepsuit >=1.0
 {%- endcomment -%}
-{% echo product.name %}
-{% echo product.price | money %}
+{% assign product = products | first %}
+{% echo product.title %}
+{% echo product.price | round: 2 %}

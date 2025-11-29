@@ -2,5 +2,5 @@
 Unit test: compact filter
 Remove nil values from array
 {%- endcomment -%}
-{% assign values = items | map: 'optional_field' | compact %}
+{% assign values = products | map: 'description' | compact %}
 {{ values | join: ', ' }}

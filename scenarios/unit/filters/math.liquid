@@ -2,6 +2,7 @@
 Unit test: math filters
 Arithmetic operations: plus, minus, times, divided_by, modulo
 {%- endcomment -%}
+{% assign product = products | first %}
 {% assign price = product.price %}
 Plus 10: {{ price | plus: 10 }}
 Minus 5: {{ price | minus: 5 }}

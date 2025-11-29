@@ -2,6 +2,7 @@
 Unit test: upcase/downcase/capitalize filters
 String case transformation
 {%- endcomment -%}
-{{ product.name | upcase }}
-{{ product.name | downcase }}
-{{ product.name | capitalize }}
+{% assign product = products | first %}
+{{ product.title | upcase }}
+{{ product.title | downcase }}
+{{ product.title | capitalize }}

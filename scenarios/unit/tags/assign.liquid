@@ -2,7 +2,8 @@
 Unit test: assign tag
 Measures variable assignment performance
 {%- endcomment -%}
-{% assign name = product.name %}
+{% assign product = products | first %}
+{% assign name = product.title %}
 {% assign price = product.price %}
 {% assign discounted = price | times: 0.9 %}
 {{ name }}: {{ discounted }}

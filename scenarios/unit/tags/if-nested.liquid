@@ -2,23 +2,25 @@
 Unit test: nested if conditions
 Measures performance of deeply nested conditionals
 {%- endcomment -%}
+{% assign product = products | first %}
+{% assign variant = product.variants | first %}
 {% if product %}
-  {% if product.available %}
+  {% if variant.available %}
     {% if product.price > 100 %}
-      {% if product.featured %}
-Premium featured product: {{ product.name }}
+      {% if variant.price > 50 %}
+Premium featured product: {{ product.title }}
       {% else %}
-Premium product: {{ product.name }}
+Premium product: {{ product.title }}
       {% endif %}
     {% else %}
-      {% if product.on_sale %}
-On sale: {{ product.name }}
+      {% if product.price < 20 %}
+On sale: {{ product.title }}
       {% else %}
-Regular: {{ product.name }}
+Regular: {{ product.title }}
       {% endif %}
     {% endif %}
   {% else %}
-Out of stock: {{ product.name }}
+Out of stock: {{ product.title }}
   {% endif %}
 {% else %}
 No product

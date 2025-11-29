@@ -3,8 +3,8 @@ Composite test: capture with loop
 Build string output in loop using capture
 {%- endcomment -%}
 {% capture output %}
-{% for item in items %}
-- {{ item.name }}: {{ item.price }}
+{% for product in products %}
+- {{ product.title }}: {{ product.price }}
 {% endfor %}
 {% endcapture %}
 <pre>{{ output }}</pre>

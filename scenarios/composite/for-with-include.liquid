@@ -1,8 +1,9 @@
 {%- comment -%}
 Composite test: for loop with include
 Partial inclusion inside loop
-Requires: partials/product-card.liquid
+Requires: partials/product_card.liquid
+Support: kalimatas only (keepsuit doesn't support include tag)
 {%- endcomment -%}
-{% for product in items %}
-  {% include 'product-card', product: product %}
+{% for product in products %}
+  {% include 'product_card', product: product %}
 {% endfor %}

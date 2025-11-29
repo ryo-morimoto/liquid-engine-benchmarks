@@ -4,7 +4,8 @@ Cleaner syntax for multiple Liquid statements
 Support: shopify >=5.0, keepsuit >=1.0
 {%- endcomment -%}
 {% liquid
-  assign name = product.name
+  assign product = products | first
+  assign name = product.title
   assign price = product.price
   assign discounted = price | times: 0.9
 

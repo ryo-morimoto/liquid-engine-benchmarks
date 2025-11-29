@@ -3,6 +3,7 @@ Unit test: at_least/at_most filters
 Clamp number to range
 Support: shopify >=5.0, keepsuit >=2.0
 {%- endcomment -%}
+{% assign product = products | first %}
 {{ 5 | at_least: 10 }}
 {{ 15 | at_most: 10 }}
 {{ product.price | at_least: 0 | at_most: 1000 }}

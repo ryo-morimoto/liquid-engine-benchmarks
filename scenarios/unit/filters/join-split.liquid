@@ -2,9 +2,9 @@
 Unit test: join/split filters
 String joining and splitting
 {%- endcomment -%}
-{% assign names = items | map: 'name' | join: ',' %}
-{{ names }}
-{% assign parts = names | split: ',' %}
+{% assign titles = products | map: 'title' | join: ',' %}
+{{ titles }}
+{% assign parts = titles | split: ',' %}
 {% for part in parts %}
 - {{ part }}
 {% endfor %}

@@ -2,5 +2,6 @@
 Unit test: default filter
 Fallback value for nil/empty
 {%- endcomment -%}
+{% assign product = products | first %}
 {{ product.description | default: 'No description' }}
 {{ missing_var | default: 'Fallback value' }}

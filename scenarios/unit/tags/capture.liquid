@@ -2,9 +2,10 @@
 Unit test: capture tag
 Measures string capture and concatenation performance
 {%- endcomment -%}
+{% assign product = products | first %}
 {% capture product_info %}
-Name: {{ product.name }}
+Name: {{ product.title }}
 Price: {{ product.price }}
-Type: {{ product.type }}
+Description: {{ product.description }}
 {% endcapture %}
 {{ product_info }}
