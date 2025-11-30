@@ -1,7 +1,0 @@
-{% for product in products %}
-  <div class="product">
-    <h2>{{ product.title }}</h2>
-    <p class="price">${{ product.price | divided_by: 100 }}</p>
-    <p>{{ product.description | truncate: 80 }}</p>
-  </div>
-{% endfor %}
