@@ -82,6 +82,7 @@ jobs:
         with:
           php-version: ${{ steps.config.outputs.php_version }}
           extensions: mbstring
+          coverage: none
           tools: composer:v2
 
       - name: Cache Composer
