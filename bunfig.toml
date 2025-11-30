@@ -1,0 +1,12 @@
+# Bun configuration
+# https://bun.sh/docs/runtime/bunfig
+
+[test]
+# Enable coverage reporting
+coverage = true
+
+# Coverage threshold (80%)
+coverageThreshold = { line = 80, function = 80, statement = 80 }
+
+# Exclude test files and generated code from coverage
+coverageSkipTestFiles = true
