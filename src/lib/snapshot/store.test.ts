@@ -204,4 +204,81 @@ describe("snapshot store", () => {
       expect(snapshotExists(key, "keepsuit", TEST_SNAPSHOT_DIR)).toBe(false);
     });
   });
+
+  describe("concurrent access", () => {
+    test("concurrent saveSnapshot calls to different adapters don't interfere", async () => {
+      const key = "test/concurrent/small";
+
+      // Parallel writes to different adapter files
+      await Promise.all([
+        saveSnapshot(key, "shopify", "shopify content", TEST_SNAPSHOT_DIR),
+        saveSnapshot(key, "keepsuit", "keepsuit content", TEST_SNAPSHOT_DIR),
+        saveSnapshot(key, "kalimatas", "kalimatas content", TEST_SNAPSHOT_DIR),
+      ]);
+
+      // All should succeed and have correct content
+      const shopify = await loadSnapshot(key, "shopify", TEST_SNAPSHOT_DIR);
+      const keepsuit = await loadSnapshot(key, "keepsuit", TEST_SNAPSHOT_DIR);
+      const kalimatas = await loadSnapshot(key, "kalimatas", TEST_SNAPSHOT_DIR);
+
+      expect(shopify).toBe("shopify content");
+      expect(keepsuit).toBe("keepsuit content");
+      expect(kalimatas).toBe("kalimatas content");
+    });
+
+    test("concurrent loadSnapshot calls return correct content", async () => {
+      const key = "test/concurrent-load/small";
+
+      // Setup
+      await saveSnapshot(key, "shopify", "shopify data", TEST_SNAPSHOT_DIR);
+      await saveSnapshot(key, "keepsuit", "keepsuit data", TEST_SNAPSHOT_DIR);
+
+      // Parallel reads
+      const [shopify, keepsuit] = await Promise.all([
+        loadSnapshot(key, "shopify", TEST_SNAPSHOT_DIR),
+        loadSnapshot(key, "keepsuit", TEST_SNAPSHOT_DIR),
+      ]);
+
+      expect(shopify).toBe("shopify data");
+      expect(keepsuit).toBe("keepsuit data");
+    });
+  });
+
+  describe("path handling", () => {
+    test("handles scenario names with hyphens", async () => {
+      const key = "unit/tags/for-each/small";
+      const adapter = "shopify";
+
+      await saveSnapshot(key, adapter, "content", TEST_SNAPSHOT_DIR);
+      const loaded = await loadSnapshot(key, adapter, TEST_SNAPSHOT_DIR);
+
+      expect(loaded).toBe("content");
+    });
+
+    test("handles scenario names with underscores", async () => {
+      const key = "unit/filters/split_join/small";
+      const adapter = "shopify";
+
+      await saveSnapshot(key, adapter, "content", TEST_SNAPSHOT_DIR);
+      const loaded = await loadSnapshot(key, adapter, TEST_SNAPSHOT_DIR);
+
+      expect(loaded).toBe("content");
+    });
+
+    test("getSnapshotPath generates safe paths within snapshot directory", () => {
+      // Verify paths stay within the snapshot directory
+      const normalPath = getSnapshotPath("unit/tags/for/small", "shopify", TEST_SNAPSHOT_DIR);
+
+      expect(normalPath.startsWith(TEST_SNAPSHOT_DIR)).toBe(true);
+      expect(normalPath).toContain("shopify.snap");
+    });
+
+    test("snapshot path does not escape base directory with normal input", () => {
+      const path = getSnapshotPath("unit/tags/for/small", "shopify", TEST_SNAPSHOT_DIR);
+
+      // Path should be: TEST_SNAPSHOT_DIR/unit/tags/for/small/shopify.snap
+      expect(path).toBe(join(TEST_SNAPSHOT_DIR, "unit/tags/for/small", "shopify.snap"));
+      expect(path.startsWith(TEST_SNAPSHOT_DIR)).toBe(true);
+    });
+  });
 });
