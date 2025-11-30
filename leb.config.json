@@ -14,21 +14,14 @@
       "name": "keepsuit",
       "package": "keepsuit/liquid",
       "version": "0.9.0",
-      "excludeScenarios": [
-        "unit/tags/extends",
-        "unit/tags/include"
-      ]
+      "excludeScenarios": ["unit/tags/extends", "unit/tags/include"]
     },
     {
       "lang": "php",
       "name": "kalimatas",
       "package": "liquid/liquid",
       "version": "1.4.44",
-      "excludeScenarios": [
-        "unit/tags/render",
-        "unit/tags/echo",
-        "unit/tags/liquid"
-      ]
+      "excludeScenarios": ["unit/tags/render", "unit/tags/echo", "unit/tags/liquid"]
     },
     {
       "lang": "ruby",

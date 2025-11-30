@@ -133,9 +133,7 @@ describe("getExcludedScenarios", () => {
     const config: LebConfig = {
       runtimes: { php: "8.3", ruby: "3.3" },
       baseline: { library: "shopify", version: "5.6.0" },
-      libraries: [
-        { lang: "php", name: "keepsuit", package: "keepsuit/liquid", version: "1.0.0" },
-      ],
+      libraries: [{ lang: "php", name: "keepsuit", package: "keepsuit/liquid", version: "1.0.0" }],
     };
 
     const excluded = getExcludedScenarios(config, "keepsuit");

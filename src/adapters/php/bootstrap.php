@@ -65,7 +65,8 @@ function readInput(): array
  *   version: string,
  *   lang: string,
  *   runtime_version: string,
- *   timings: array{parse_ms: float[], render_ms: float[]}
+ *   timings: array{parse_ms: float[], render_ms: float[]},
+ *   rendered_output: string
  * } $output
  */
 function writeOutput(array $output): void
@@ -102,7 +103,7 @@ function measureTime(callable $fn): array
  * @param callable $renderFn Function that renders template (receives parse result)
  * @param int $iterations Number of measured iterations
  * @param int $warmup Number of warmup iterations
- * @return array{parse_ms: float[], render_ms: float[]}
+ * @return array{parse_ms: float[], render_ms: float[], rendered_output: string}
  */
 function runBenchmark(
     callable $parseFn,
@@ -112,6 +113,7 @@ function runBenchmark(
 ): array {
     $parseTimings = [];
     $renderTimings = [];
+    $lastRenderedOutput = '';
 
     // Warmup runs (results discarded)
     for ($i = 0; $i < $warmup; $i++) {
@@ -128,10 +130,14 @@ function runBenchmark(
         // Measure render
         $renderData = measureTime(fn() => $renderFn($parseData['result']));
         $renderTimings[] = $renderData['time_ms'];
+
+        // Keep the last rendered output for snapshot testing
+        $lastRenderedOutput = $renderData['result'];
     }
 
     return [
         'parse_ms' => $parseTimings,
         'render_ms' => $renderTimings,
+        'rendered_output' => $lastRenderedOutput,
     ];
 }

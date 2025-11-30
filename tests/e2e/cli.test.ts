@@ -283,7 +283,7 @@ describe("E2E: Different Scenarios", () => {
   const BENCHMARK_TIMEOUT = 30_000;
 
   test(
-    "runs with composite scenario",
+    "runs with representative scenario",
     async () => {
       if (!(await isRuntimeAvailable("php"))) {
         console.log("Skipping: PHP not available");
@@ -293,7 +293,7 @@ describe("E2E: Different Scenarios", () => {
       const { stdout, exitCode } = await runCli([
         "bench",
         "keepsuit",
-        "composite/for-with-if",
+        "representative/simple",
         "--iterations",
         "2",
         "--warmup",
@@ -303,14 +303,14 @@ describe("E2E: Different Scenarios", () => {
       ]);
 
       if (exitCode !== 0) {
-        console.log("Skipping: composite scenario test failed");
+        console.log("Skipping: representative scenario test failed");
         return;
       }
 
       expect(exitCode).toBe(0);
 
       const result = JSON.parse(stdout);
-      expect(result.metadata.scenario).toBe("composite/for-with-if");
+      expect(result.metadata.scenario).toBe("representative/simple");
     },
     BENCHMARK_TIMEOUT
   );
@@ -1368,6 +1368,284 @@ describe("E2E: Setup Command", () => {
   });
 });
 
+describe("E2E: Snapshot Verification", () => {
+  const BENCHMARK_TIMEOUT = 30_000;
+  const PROJECT_ROOT = join(__dirname, "../..");
+  const SNAPSHOT_DIR = join(PROJECT_ROOT, "__snapshots__");
+
+  describe("help text includes verification options", () => {
+    test("bench help shows --no-verify option", async () => {
+      const { stdout, exitCode } = await runCli(["bench", "--help"]);
+
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain("--no-verify");
+      expect(stdout).toContain("Skip output verification");
+    });
+
+    test("bench help shows --update-snapshots option", async () => {
+      const { stdout, exitCode } = await runCli(["bench", "--help"]);
+
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain("--update-snapshots");
+      expect(stdout).toContain("-u");
+      expect(stdout).toContain("Update baseline snapshots");
+    });
+  });
+
+  describe("verification option parsing", () => {
+    test("accepts --no-verify flag", async () => {
+      const { exitCode } = await runCli(["bench", "--no-verify", "--help"]);
+      expect(exitCode).toBe(0);
+    });
+
+    test("accepts -u short flag", async () => {
+      const { exitCode } = await runCli(["bench", "-u", "--help"]);
+      expect(exitCode).toBe(0);
+    });
+
+    test("accepts --update-snapshots flag", async () => {
+      const { exitCode } = await runCli(["bench", "--update-snapshots", "--help"]);
+      expect(exitCode).toBe(0);
+    });
+
+    test("--no-verify and -u can be combined (no conflict)", async () => {
+      // Both flags are valid even if semantically redundant
+      const { exitCode } = await runCli(["bench", "--no-verify", "-u", "--help"]);
+      expect(exitCode).toBe(0);
+    });
+  });
+
+  describe("snapshot update and verification flow", () => {
+    test(
+      "adapter with -u creates snapshot file",
+      async () => {
+        if (!(await isRuntimeAvailable("ruby"))) {
+          console.log("Skipping: Ruby not available");
+          return;
+        }
+
+        // Snapshot path: __snapshots__/{scenario}/{scale}/{adapter}.snap
+        const snapshotPath = join(SNAPSHOT_DIR, "unit/tags/for/small", "shopify.snap");
+
+        // Remove existing snapshot if present
+        try {
+          const proc = Bun.spawn(["rm", "-f", snapshotPath]);
+          await proc.exited;
+        } catch {
+          // Ignore if file doesn't exist
+        }
+
+        const { stderr, exitCode } = await runCli([
+          "bench",
+          "shopify",
+          "unit/tags/for",
+          "-i",
+          "2",
+          "-w",
+          "0",
+          "-s",
+          "small",
+          "-u",
+        ]);
+
+        // Skip if deps not installed
+        if (exitCode !== 0 && stderr.includes("dependencies")) {
+          console.log("Skipping: shopify adapter not ready");
+          return;
+        }
+
+        expect(exitCode).toBe(0);
+        expect(stderr).toContain("mode: updating snapshots");
+
+        // Verify snapshot file was created
+        const file = Bun.file(snapshotPath);
+        expect(await file.exists()).toBe(true);
+
+        // Verify content is not empty
+        const content = await file.text();
+        expect(content.length).toBeGreaterThan(0);
+      },
+      BENCHMARK_TIMEOUT
+    );
+
+    test(
+      "adapter without flags verifies against own snapshot (self-verification)",
+      async () => {
+        if (!(await isRuntimeAvailable("ruby"))) {
+          console.log("Skipping: Ruby not available");
+          return;
+        }
+
+        // First create the snapshot
+        const createResult = await runCli([
+          "bench",
+          "shopify",
+          "unit/tags/for",
+          "-i",
+          "2",
+          "-w",
+          "0",
+          "-s",
+          "small",
+          "-u",
+        ]);
+
+        if (createResult.exitCode !== 0) {
+          console.log("Skipping: couldn't create snapshot");
+          return;
+        }
+
+        // Verify with the same adapter (self-verification)
+        const { stdout, stderr, exitCode } = await runCli([
+          "bench",
+          "shopify",
+          "unit/tags/for",
+          "-i",
+          "2",
+          "-w",
+          "0",
+          "-s",
+          "small",
+        ]);
+
+        expect(exitCode).toBe(0);
+        expect(stderr).toContain("verification: pass");
+
+        // JSON output includes verification result
+        const result = JSON.parse(stdout);
+        expect(result.verification).toBeDefined();
+        expect(result.verification.status).toBe("pass");
+      },
+      BENCHMARK_TIMEOUT
+    );
+
+    test(
+      "--no-verify skips verification even when snapshot exists",
+      async () => {
+        if (!(await isRuntimeAvailable("ruby"))) {
+          console.log("Skipping: Ruby not available");
+          return;
+        }
+
+        // First create the snapshot
+        const createResult = await runCli([
+          "bench",
+          "shopify",
+          "unit/tags/for",
+          "-i",
+          "2",
+          "-w",
+          "0",
+          "-s",
+          "small",
+          "-u",
+        ]);
+
+        if (createResult.exitCode !== 0) {
+          console.log("Skipping: couldn't create snapshot");
+          return;
+        }
+
+        // Skip verification with --no-verify
+        const { stdout, stderr, exitCode } = await runCli([
+          "bench",
+          "shopify",
+          "unit/tags/for",
+          "-i",
+          "2",
+          "-w",
+          "0",
+          "-s",
+          "small",
+          "--no-verify",
+        ]);
+
+        expect(exitCode).toBe(0);
+        expect(stderr).toContain("mode: no verification");
+        expect(stderr).not.toContain("verification: pass");
+        expect(stderr).not.toContain("verification: FAIL");
+
+        // JSON output should not include verification result
+        const result = JSON.parse(stdout);
+        expect(result.verification).toBeUndefined();
+      },
+      BENCHMARK_TIMEOUT
+    );
+
+    test(
+      "each adapter has its own snapshot (self-verification)",
+      async () => {
+        if (!(await isRuntimeAvailable("ruby"))) {
+          console.log("Skipping: Ruby not available");
+          return;
+        }
+        if (!(await isRuntimeAvailable("php"))) {
+          console.log("Skipping: PHP not available");
+          return;
+        }
+
+        // Create snapshot for shopify
+        const shopifyCreate = await runCli([
+          "bench",
+          "shopify",
+          "unit/tags/for",
+          "-i",
+          "2",
+          "-w",
+          "0",
+          "-s",
+          "small",
+          "-u",
+        ]);
+
+        if (shopifyCreate.exitCode !== 0) {
+          console.log("Skipping: couldn't create shopify snapshot");
+          return;
+        }
+
+        // Create snapshot for keepsuit
+        const keepsuitCreate = await runCli([
+          "bench",
+          "keepsuit",
+          "unit/tags/for",
+          "-i",
+          "2",
+          "-w",
+          "0",
+          "-s",
+          "small",
+          "-u",
+        ]);
+
+        if (keepsuitCreate.exitCode !== 0) {
+          console.log("Skipping: couldn't create keepsuit snapshot");
+          return;
+        }
+
+        // Verify keepsuit against its own snapshot (should pass)
+        const { stdout, exitCode } = await runCli([
+          "bench",
+          "keepsuit",
+          "unit/tags/for",
+          "-i",
+          "2",
+          "-w",
+          "0",
+          "-s",
+          "small",
+        ]);
+
+        // Self-verification should pass
+        expect(exitCode).toBe(0);
+        const result = JSON.parse(stdout);
+        expect(result.verification).toBeDefined();
+        expect(result.verification.status).toBe("pass");
+      },
+      BENCHMARK_TIMEOUT
+    );
+  });
+});
+
 describe("E2E: Prepare Command", () => {
   const PROJECT_ROOT = join(__dirname, "../..");
   const SCHEMA_DIR = join(PROJECT_ROOT, ".generated/schema");
@@ -1418,22 +1696,18 @@ describe("E2E: Prepare Command", () => {
     expect(stdout).toContain("Seeding");
   });
 
-  test(
-    "prepare is idempotent",
-    async () => {
-      // Run prepare twice
-      const first = await runCli(["prepare"]);
-      const second = await runCli(["prepare"]);
+  test("prepare is idempotent", async () => {
+    // Run prepare twice
+    const first = await runCli(["prepare"]);
+    const second = await runCli(["prepare"]);
 
-      expect(first.exitCode).toBe(0);
-      expect(second.exitCode).toBe(0);
+    expect(first.exitCode).toBe(0);
+    expect(second.exitCode).toBe(0);
 
-      // Both should succeed without errors
-      expect(first.stdout).toContain("Generating JSON Schemas");
-      expect(second.stdout).toContain("Generating JSON Schemas");
-    },
-    15000
-  );
+    // Both should succeed without errors
+    expect(first.stdout).toContain("Generating JSON Schemas");
+    expect(second.stdout).toContain("Generating JSON Schemas");
+  }, 15000);
 
   test("prepare shows help with --help flag", async () => {
     const { stdout, exitCode } = await runCli(["prepare", "--help"]);

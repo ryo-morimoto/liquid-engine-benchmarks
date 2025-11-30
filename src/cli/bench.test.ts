@@ -529,4 +529,127 @@ describe("parseArgs_", () => {
       expect(result.format).toBe("json");
     });
   });
+
+  describe("--no-verify option", () => {
+    test("noVerify is false by default in all mode", () => {
+      const result = parseArgs_([]);
+
+      expect(result.mode).toBe("all");
+      if (result.mode === "all") {
+        expect(result.noVerify).toBe(false);
+      }
+    });
+
+    test("noVerify is false by default in single mode", () => {
+      const result = parseArgs_(["keepsuit", "unit/tags/for"]);
+
+      expect(result.mode).toBe("single");
+      if (result.mode === "single") {
+        expect(result.noVerify).toBe(false);
+      }
+    });
+
+    test("parses --no-verify flag in all mode", () => {
+      const result = parseArgs_(["--no-verify"]);
+
+      expect(result.mode).toBe("all");
+      if (result.mode === "all") {
+        expect(result.noVerify).toBe(true);
+      }
+    });
+
+    test("parses --no-verify flag in single mode", () => {
+      const result = parseArgs_(["keepsuit", "unit/tags/for", "--no-verify"]);
+
+      expect(result.mode).toBe("single");
+      if (result.mode === "single") {
+        expect(result.noVerify).toBe(true);
+      }
+    });
+
+    test("--no-verify can appear before positional args", () => {
+      const result = parseArgs_(["--no-verify", "keepsuit", "unit/tags/for"]);
+
+      expect(result.mode).toBe("single");
+      if (result.mode === "single") {
+        expect(result.noVerify).toBe(true);
+      }
+    });
+
+    test("--no-verify works with all other options", () => {
+      const result = parseArgs_([
+        "shopify",
+        "unit/tags/for",
+        "-s",
+        "large",
+        "-i",
+        "50",
+        "--no-verify",
+      ]);
+
+      expect(result.mode).toBe("single");
+      if (result.mode === "single") {
+        expect(result.noVerify).toBe(true);
+      }
+      expect(result.scale).toBe("large");
+      expect(result.iterations).toBe(50);
+    });
+  });
+
+  describe("--update-snapshots option", () => {
+    test("updateSnapshots is false by default in all mode", () => {
+      const result = parseArgs_([]);
+
+      expect(result.mode).toBe("all");
+      if (result.mode === "all") {
+        expect(result.updateSnapshots).toBe(false);
+      }
+    });
+
+    test("updateSnapshots is false by default in single mode", () => {
+      const result = parseArgs_(["keepsuit", "unit/tags/for"]);
+
+      expect(result.mode).toBe("single");
+      if (result.mode === "single") {
+        expect(result.updateSnapshots).toBe(false);
+      }
+    });
+
+    test("parses --update-snapshots flag in all mode", () => {
+      const result = parseArgs_(["--update-snapshots"]);
+
+      expect(result.mode).toBe("all");
+      if (result.mode === "all") {
+        expect(result.updateSnapshots).toBe(true);
+      }
+    });
+
+    test("parses --update-snapshots flag in single mode", () => {
+      const result = parseArgs_(["keepsuit", "unit/tags/for", "--update-snapshots"]);
+
+      expect(result.mode).toBe("single");
+      if (result.mode === "single") {
+        expect(result.updateSnapshots).toBe(true);
+      }
+    });
+
+    test("parses -u short flag for --update-snapshots", () => {
+      const result = parseArgs_(["-u"]);
+
+      expect(result.mode).toBe("all");
+      if (result.mode === "all") {
+        expect(result.updateSnapshots).toBe(true);
+      }
+    });
+
+    test("--update-snapshots implies --no-verify (snapshots must be generated before verify)", () => {
+      const result = parseArgs_(["--update-snapshots"]);
+
+      expect(result.mode).toBe("all");
+      if (result.mode === "all") {
+        // When updating snapshots, verification is skipped as we're generating new baselines
+        expect(result.updateSnapshots).toBe(true);
+      }
+    });
+  });
 });

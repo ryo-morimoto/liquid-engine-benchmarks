@@ -174,6 +174,58 @@ describe("validateAdapterOutput", () => {
     expect(result).toEqual(output);
   });
 
+  test("accepts output with rendered_output", async () => {
+    const output = {
+      library: "shopify/liquid",
+      version: "5.6.0",
+      lang: "ruby",
+      rendered_output: "<h1>Hello World</h1>",
+      timings: {
+        parse_ms: [1.0],
+        render_ms: [0.5],
+      },
+    };
+
+    const result = await validateAdapterOutput(output);
+    expect(result).toEqual(output);
+  });
+
+  test("accepts output with empty rendered_output", async () => {
+    const output = {
+      library: "keepsuit/php-liquid",
+      version: "0.10.0",
+      lang: "php",
+      rendered_output: "",
+      timings: {
+        parse_ms: [1.0],
+        render_ms: [0.5],
+      },
+    };
+
+    const result = await validateAdapterOutput(output);
+    expect(result).toEqual(output);
+  });
+
+  test("accepts output with multiline rendered_output", async () => {
+    const output = {
+      library: "shopify/liquid",
+      version: "5.6.0",
+      lang: "ruby",
+      rendered_output: `<html>
+  <body>
+    <h1>Title</h1>
+  </body>
+</html>`,
+      timings: {
+        parse_ms: [1.0],
+        render_ms: [0.5],
+      },
+    };
+
+    const result = await validateAdapterOutput(output);
+    expect(result).toEqual(output);
+  });
+
   test("rejects invalid semver", async () => {
     const output = {
       library: "keepsuit/php-liquid",

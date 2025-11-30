@@ -62,6 +62,12 @@ export {
   type ScenarioInfo,
   ScenarioLoader,
 } from "./scenario";
+// Snapshot module
+export {
+  updateSnapshot,
+  type VerifyResult,
+  verifySnapshot,
+} from "./snapshot";
 // Stats module
 export {
   addArrays,

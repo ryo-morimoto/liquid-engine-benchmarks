@@ -79,11 +79,12 @@ end
 # @yield [phase] Block that receives :parse or :render and returns the operation result
 # @yieldparam phase [Symbol] Either :parse or :render
 # @yieldparam parse_result [Object, nil] Parse result (only for :render phase)
-# @return [Hash] { parse_ms: Array<Float>, render_ms: Array<Float> }
+# @return [Hash] { parse_ms: Array<Float>, render_ms: Array<Float>, rendered_output: String }
 #
 def run_benchmark(iterations:, warmup:, &block)
   parse_timings = []
   render_timings = []
+  last_rendered_output = ''
 
   # Warmup runs (results discarded)
   warmup.times do
@@ -98,12 +99,16 @@ def run_benchmark(iterations:, warmup:, &block)
     parse_timings << parse_time
 
     # Measure render
-    _, render_time = measure_time { block.call(:render, parse_result) }
+    render_result, render_time = measure_time { block.call(:render, parse_result) }
     render_timings << render_time
+
+    # Keep the last rendered output for snapshot testing
+    last_rendered_output = render_result
   end
 
   {
     parse_ms: parse_timings,
-    render_ms: render_timings
+    render_ms: render_timings,
+    rendered_output: last_rendered_output
   }
 end

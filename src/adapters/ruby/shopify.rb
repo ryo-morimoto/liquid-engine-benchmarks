@@ -18,7 +18,7 @@ iterations = input['iterations'].to_i
 warmup = input['warmup'].to_i
 
 # Run benchmark
-timings = run_benchmark(iterations: iterations, warmup: warmup) do |phase, parse_result|
+benchmark_result = run_benchmark(iterations: iterations, warmup: warmup) do |phase, parse_result|
   case phase
   when :parse
     Liquid::Template.parse(template_source)
@@ -36,5 +36,9 @@ write_output(
   version: version,
   lang: 'ruby',
   runtime_version: RUBY_VERSION,
-  timings: timings
+  timings: {
+    parse_ms: benchmark_result[:parse_ms],
+    render_ms: benchmark_result[:render_ms]
+  },
+  rendered_output: benchmark_result[:rendered_output]
 )

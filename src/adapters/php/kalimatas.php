@@ -34,7 +34,7 @@ Liquid::set('INCLUDE_PREFIX', '');
 $fileSystem = new LocalFileSystem($partialsPath);
 
 // Run benchmark
-$timings = runBenchmark(
+$benchmarkResult = runBenchmark(
     parseFn: function () use ($templateSource, $fileSystem): Template {
         $template = new Template();
         $template->setFileSystem($fileSystem);
@@ -67,5 +67,9 @@ writeOutput([
     'version' => $version,
     'lang' => 'php',
     'runtime_version' => PHP_VERSION,
-    'timings' => $timings,
+    'timings' => [
+        'parse_ms' => $benchmarkResult['parse_ms'],
+        'render_ms' => $benchmarkResult['render_ms'],
+    ],
+    'rendered_output' => $benchmarkResult['rendered_output'],
 ]);

@@ -86,6 +86,11 @@ export interface AdapterOutput {
   runtime_version?: string;
   /** Raw timing measurements */
   timings: RawTimings;
+  /**
+   * Rendered template output.
+   * Used for snapshot testing to verify output consistency across implementations.
+   */
+  rendered_output?: string;
 }
 
 // ============================================================================

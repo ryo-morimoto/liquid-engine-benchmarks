@@ -156,6 +156,24 @@ describe("Adapter Contract Tests", () => {
           expect(ms).toBeGreaterThanOrEqual(0);
         }
       });
+
+      test(`${adapterName} returns rendered_output`, async () => {
+        if (!(await isAdapterAvailable(adapterName))) {
+          console.log(`Skipping ${adapterName}: runtime not available`);
+          return;
+        }
+
+        const result = await runAdapter(adapterName, TEST_INPUT, 60_000);
+        const { rendered_output } = result.output;
+
+        // rendered_output should be present and be a string
+        expect(rendered_output).toBeDefined();
+        expect(typeof rendered_output).toBe("string");
+
+        // For our test template "Hello, {{ name }}!" with data { name: "World" }
+        // the expected output is "Hello, World!"
+        expect(rendered_output).toBe("Hello, World!");
+      });
     }
   });
 

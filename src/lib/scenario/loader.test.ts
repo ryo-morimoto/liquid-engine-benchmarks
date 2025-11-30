@@ -22,7 +22,7 @@ describe("ScenarioLoader", () => {
 
       expect(categories).toContain("unit/tags");
       expect(categories).toContain("unit/filters");
-      expect(categories).toContain("composite");
+      expect(categories).toContain("representative");
     });
 
     test("returns hierarchical categories", () => {
@@ -39,7 +39,7 @@ describe("ScenarioLoader", () => {
       const scenarios = loader.listCategory("unit/tags");
 
       expect(scenarios).toContain("for");
-      expect(scenarios).toContain("if-simple");
+      expect(scenarios).toContain("if");
       expect(scenarios).toContain("assign");
     });
 
@@ -51,11 +51,11 @@ describe("ScenarioLoader", () => {
       expect(scenarios).toContain("sort");
     });
 
-    test("lists scenarios in composite category", () => {
-      const scenarios = loader.listCategory("composite");
+    test("lists scenarios in representative category", () => {
+      const scenarios = loader.listCategory("representative");
 
-      expect(scenarios).toContain("for-with-if");
-      expect(scenarios).toContain("filter-chain-in-loop");
+      expect(scenarios).toContain("simple");
+      expect(scenarios).toContain("easy-loop");
     });
 
     test("returns names without .liquid extension", () => {
@@ -104,8 +104,8 @@ describe("ScenarioLoader", () => {
       expect(content).toContain("{{");
     });
 
-    test("loads scenario by 2-level path (composite/for-with-if)", async () => {
-      const content = await loader.loadByPath("composite/for-with-if");
+    test("loads scenario by 2-level path (representative/simple)", async () => {
+      const content = await loader.loadByPath("representative/simple");
 
       expect(content).toContain("{%");
     });
@@ -133,12 +133,12 @@ describe("ScenarioLoader", () => {
     });
 
     test("loads mixed 2-level and 3-level paths", async () => {
-      const paths = ["unit/tags/for", "composite/for-with-if"];
+      const paths = ["unit/tags/for", "representative/simple"];
       const results = await loader.loadMany(paths);
 
       expect(results.size).toBe(2);
       expect(results.has("unit/tags/for")).toBe(true);
-      expect(results.has("composite/for-with-if")).toBe(true);
+      expect(results.has("representative/simple")).toBe(true);
     });
 
     test("returns empty map for empty input", async () => {
@@ -178,7 +178,7 @@ describe("ScenarioLoader", () => {
     });
 
     test("returns true for existing 2-level path", () => {
-      expect(loader.existsByPath("composite/for-with-if")).toBe(true);
+      expect(loader.existsByPath("representative/simple")).toBe(true);
     });
 
     test("returns false for non-existent path", () => {
@@ -208,7 +208,7 @@ describe("ScenarioLoader", () => {
       const categories = new Set(scenarios.map((s) => s.category));
       expect(categories.has("unit/tags")).toBe(true);
       expect(categories.has("unit/filters")).toBe(true);
-      expect(categories.has("composite")).toBe(true);
+      expect(categories.has("representative")).toBe(true);
     });
   });
 });

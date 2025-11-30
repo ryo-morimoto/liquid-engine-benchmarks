@@ -5,14 +5,6 @@
  * Types are exported from src/types for Single Source of Truth.
  */
 
-export {
-  filterLibrariesByLang,
-  getExcludedScenarios,
-  getLibraryConfig,
-  getRuntimeVersion,
-  loadConfig,
-} from "./loader";
-
 // Re-export types from src/types for backward compatibility
 export type {
   BaselineConfig,
@@ -20,3 +12,10 @@ export type {
   LebConfig,
   LibraryConfig,
 } from "../../types";
+export {
+  filterLibrariesByLang,
+  getExcludedScenarios,
+  getLibraryConfig,
+  getRuntimeVersion,
+  loadConfig,
+} from "./loader";

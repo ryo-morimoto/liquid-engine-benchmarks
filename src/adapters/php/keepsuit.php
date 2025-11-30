@@ -38,7 +38,7 @@ $environment = EnvironmentFactory::new()
     ->build();
 
 // Run benchmark
-$timings = runBenchmark(
+$benchmarkResult = runBenchmark(
     parseFn: function () use ($environment, $templateSource): Template {
         return $environment->parseString($templateSource);
     },
@@ -69,5 +69,9 @@ writeOutput([
     'version' => $version,
     'lang' => 'php',
     'runtime_version' => PHP_VERSION,
-    'timings' => $timings,
+    'timings' => [
+        'parse_ms' => $benchmarkResult['parse_ms'],
+        'render_ms' => $benchmarkResult['render_ms'],
+    ],
+    'rendered_output' => $benchmarkResult['rendered_output'],
 ]);
