@@ -6,7 +6,7 @@
  */
 
 import { Database } from "bun:sqlite";
-import { existsSync, unlinkSync } from "node:fs";
+import { existsSync, mkdirSync, unlinkSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { faker } from "@faker-js/faker";
@@ -15,7 +15,13 @@ import { DDL } from "./schema";
 faker.seed(42);
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const DB_PATH = join(__dirname, "../../data/benchmark.db");
+const GENERATED_DIR = join(__dirname, "../../.generated");
+const DB_PATH = join(GENERATED_DIR, "benchmark.db");
+
+// Ensure .generated directory exists
+if (!existsSync(GENERATED_DIR)) {
+  mkdirSync(GENERATED_DIR, { recursive: true });
+}
 
 if (existsSync(DB_PATH)) {
   unlinkSync(DB_PATH);

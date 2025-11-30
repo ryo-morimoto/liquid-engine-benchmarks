@@ -5,7 +5,7 @@
  * Uses ts-json-schema-generator to convert types in src/types/ to JSON Schema.
  *
  * Output:
- *   dist/schema/*.schema.json
+ *   .generated/schema/*.schema.json
  */
 
 import { mkdir } from "node:fs/promises";
@@ -19,7 +19,7 @@ const PROJECT_ROOT = join(import.meta.dir, "../../..");
 const TYPES_DIR = join(PROJECT_ROOT, "src/types");
 
 /** Output schema directory */
-const SCHEMA_DIR = join(PROJECT_ROOT, "dist/schema");
+const SCHEMA_DIR = join(PROJECT_ROOT, ".generated/schema");
 
 /**
  * Schema generation configuration.
@@ -77,7 +77,7 @@ function postProcessSchema(schema: object, filename: string): object {
 /**
  * Generate all JSON Schema files from TypeScript types.
  *
- * Creates dist/schema/ directory if needed and generates:
+ * Creates .generated/schema/ directory if needed and generates:
  * - adapter-input.schema.json
  * - adapter-output.schema.json
  * - leb.config.schema.json

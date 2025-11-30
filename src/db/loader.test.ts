@@ -9,7 +9,7 @@ import { DataLoader, loadData } from "./loader";
 import { SCALE_LIMITS } from "./schema";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const DB_PATH = join(__dirname, "../../data/benchmark.db");
+const DB_PATH = join(__dirname, "../../.generated/benchmark.db");
 
 describe("SCALE_LIMITS", () => {
   test("defines all scales", () => {

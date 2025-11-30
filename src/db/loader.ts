@@ -22,7 +22,7 @@ import type {
 } from "./types";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const DEFAULT_DB_PATH = join(__dirname, "../../data/benchmark.db");
+const DEFAULT_DB_PATH = join(__dirname, "../../.generated/benchmark.db");
 
 /**
  * Data Loader Class

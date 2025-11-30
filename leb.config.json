@@ -1,5 +1,5 @@
 {
-  "$schema": "./dist/schema/leb.config.schema.json",
+  "$schema": "./.generated/schema/leb.config.schema.json",
   "runtimes": {
     "php": "8.3",
     "ruby": "3.3"

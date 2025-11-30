@@ -9,8 +9,8 @@ import { beforeAll, describe, expect, test } from "bun:test";
 import { join } from "node:path";
 import { generateSchemas } from "./generator";
 
-/** Test output directory (uses dist/schema in project root) */
-const SCHEMA_DIR = join(import.meta.dir, "../../../dist/schema");
+/** Test output directory (uses .generated/schema in project root) */
+const SCHEMA_DIR = join(import.meta.dir, "../../../.generated/schema");
 
 /** Expected schema files to be generated */
 const EXPECTED_SCHEMAS = [

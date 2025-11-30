@@ -22,15 +22,15 @@ export function printHelp(): void {
 Prepare Command
 
 Prepares the project for use:
-1. Generates JSON Schema files (dist/schema/)
-2. Seeds the benchmark database (data/benchmark.db)
+1. Generates JSON Schema files (.generated/schema/)
+2. Seeds the benchmark database (.generated/benchmark.db)
 
 Usage:
   leb prepare
 
 Output:
-  dist/schema/*.schema.json
-  data/benchmark.db
+  .generated/schema/*.schema.json
+  .generated/benchmark.db
 `);
 }
 

@@ -13,7 +13,7 @@ import addFormats from "ajv-formats";
 import type { AdapterInput, AdapterOutput } from "../types";
 
 /** Schema directory path */
-const SCHEMA_DIR = join(import.meta.dir, "../../dist/schema");
+const SCHEMA_DIR = join(import.meta.dir, "../../.generated/schema");
 
 /** Schema file names */
 const SCHEMA_FILES = [
