@@ -25,13 +25,6 @@ scenarios/
 └── partials/        # Shared partials
 ```
 
-| Category | Count | Description |
-|----------|-------|-------------|
-| **unit/tags** | 15 | Individual tag performance |
-| **unit/filters** | 24 | Individual filter performance |
-| **composite** | 10 | Feature combinations |
-| **partials** | 2 | Shared template components |
-
 See [scenarios/README.md](scenarios/README.md) for detailed scenario list.
 
 ## Results

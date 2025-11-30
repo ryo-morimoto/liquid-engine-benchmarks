@@ -2,55 +2,51 @@
 
 ## Welcome Contributions
 
-### Add new libraries
+### Add new libraries / languages
 
-Add Liquid implementations to benchmark:
-
-- [osteele/liquid](https://github.com/osteele/liquid) (Go)
-- [cobalt-org/liquid-rust](https://github.com/cobalt-org/liquid-rust) (Rust)
-- [harttle/liquidjs](https://github.com/harttle/liquidjs) (Node.js)
-
-### Optimize runtime configurations
-
-Improve benchmark accuracy with better runtime settings:
-
-- PHP: OPcache, JIT tuning
-- Ruby: YJIT options
-- New languages: equivalent optimizations
+Add Liquid implementations to benchmark. See [GitHub Issues](../../issues) for suggested libraries.
 
 ### Add benchmark scenarios
 
-Expand test coverage:
-
-- New scenarios in `scenarios/unit/tags/` or `scenarios/unit/filters/`
-- Combined tests in `scenarios/composite/`
-- Edge cases and real-world scenarios
-
-### Add new languages
-
-Extend beyond PHP/Ruby:
-
-- Go, Rust, Node.js, Python implementations
-- Consistent benchmark structure across languages
+Expand test coverage. See [scenarios/README.md](scenarios/README.md) for conventions.
 
 ### Maintenance
 
-- Dependency updates
-- CI/CD improvements
-- Bug fixes
+Dependency updates, CI/CD improvements, bug fixes, runtime optimizations (OPcache, YJIT, etc.)
 
 ## Setup
 
+### With Nix (recommended)
+
 ```bash
-nix-shell
-./scripts/setup-vendors.sh
-cd php && composer install && cd ..
-cd ruby && bundle install && cd ..
+# Using direnv (auto-activates on cd)
+direnv allow
+
+# Or manually
+nix develop
+```
+
+### Install dependencies
+
+```bash
+bun install
+bun src/run.ts setup      # Generate dependency files + seed database
+composer install          # PHP dependencies
+bundle install            # Ruby dependencies
+```
+
+### CLI Reference
+
+```bash
+bun src/run.ts --help     # Show all commands
+bun src/run.ts list       # List adapters and scenarios
+bun src/run.ts bench      # Run all benchmarks
 ```
 
 ## Before PR
 
 ```bash
-./scripts/bench-php.sh quick
-./scripts/bench-ruby.sh
+bun run check             # Lint and format (auto-fix)
+bun test                  # Run tests
+bun src/run.ts bench      # Run benchmarks (optional)
 ```
