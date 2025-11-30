@@ -11,21 +11,9 @@ This project provides **reproducible, fair benchmarks** with identical scenarios
 
 | Language | Library | Note |
 |----------|---------|------|
-| Ruby | [Shopify/liquid](https://github.com/Shopify/liquid) | Official reference implementation |
+| Ruby | [Shopify/liquid](https://github.com/Shopify/liquid) | Official reference implementation (baseline) |
 | PHP | [keepsuit/php-liquid](https://github.com/keepsuit/php-liquid) | Modern PHP 8.x implementation |
 | PHP | [kalimatas/php-liquid](https://github.com/kalimatas/php-liquid) | Established PHP implementation |
-
-## Benchmark Scenarios
-
-```
-scenarios/
-├── unit/tags/       # Tag tests (for, if, include, etc.)
-├── unit/filters/    # Filter tests (map, where, sort, etc.)
-├── composite/       # Combined feature tests
-└── partials/        # Shared partials
-```
-
-See [scenarios/README.md](scenarios/README.md) for detailed scenario list.
 
 ## Results
 
@@ -38,6 +26,17 @@ representative/easy-loop   |             0.43ms |     0.39ms (0.91x) |     0.25m
 representative/simple      |             0.23ms |     0.10ms (0.45x) |     0.07ms (0.29x)
 representative/super-large |             18.6ms |     51.8ms (2.78x) |     40.1ms (2.15x)
 <!-- CI_RESULTS_END -->
+
+### Scenario Descriptions
+
+| Scenario | Complexity | Description |
+|----------|------------|-------------|
+| [`representative/simple`](scenarios/representative/simple.liquid) | O(1) | Outputs 4 variables (`user.name`, `user.email`, `user.city`, `user.country`) with no loops or conditionals. Measures minimal template engine overhead. |
+| [`representative/easy-loop`](scenarios/representative/easy-loop.liquid) | O(n) | Iterates over a product list using a `for` loop, outputting each product's `title` and `price`. n = number of products. |
+| [`representative/deep-nested`](scenarios/representative/deep-nested.liquid) | O(n × m) | Nested loops iterating products and their variants, with conditional branching based on `available` flag and `price > 50` to output "Premium", "Standard", or "Out of stock". n = products, m = variants per product. |
+| [`representative/super-large`](scenarios/representative/super-large.liquid) | O(n × m × k) | Full e-commerce product listing page (~800 lines). Includes statistics calculation, filter chains (`sort`, `where`, `map`), price range aggregation, variant inventory display, image gallery, pagination, and JSON output across 20 sections. |
+
+See [scenarios/README.md](scenarios/README.md) for all scenarios including unit tests.
 
 ## Contributing
 
