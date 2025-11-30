@@ -174,6 +174,20 @@ describe("Adapter Contract Tests", () => {
         // the expected output is "Hello, World!"
         expect(rendered_output).toBe("Hello, World!");
       });
+
+      test(`${adapterName} rendered_output is not undefined (critical for snapshot testing)`, async () => {
+        if (!(await isAdapterAvailable(adapterName))) {
+          console.log(`Skipping ${adapterName}: runtime not available`);
+          return;
+        }
+
+        const result = await runAdapter(adapterName, TEST_INPUT, 60_000);
+
+        // rendered_output must never be undefined for snapshot testing to work
+        // If undefined, verification would be silently skipped
+        expect(result.output.rendered_output).not.toBeUndefined();
+        expect(result.output.rendered_output).not.toBeNull();
+      });
     }
   });
 

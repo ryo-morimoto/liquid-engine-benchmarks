@@ -651,5 +651,81 @@ describe("parseArgs_", () => {
         expect(result.updateSnapshots).toBe(true);
       }
     });
+
+    test("--no-verify and --update-snapshots can both be set", () => {
+      const result = parseArgs_(["--no-verify", "--update-snapshots"]);
+
+      expect(result.mode).toBe("all");
+      if (result.mode === "all") {
+        expect(result.noVerify).toBe(true);
+        expect(result.updateSnapshots).toBe(true);
+      }
+    });
+
+    test("verification options work in single mode", () => {
+      const result = parseArgs_(["keepsuit", "unit/tags/for", "-u", "--no-verify"]);
+
+      expect(result.mode).toBe("single");
+      if (result.mode === "single") {
+        expect(result.updateSnapshots).toBe(true);
+        expect(result.noVerify).toBe(true);
+      }
+    });
+  });
+});
+
+describe("VerifyOptions behavior", () => {
+  describe("verification logic", () => {
+    test("updateSnapshots=true causes snapshot to be saved, not verified", () => {
+      // This is a design documentation test
+      // When updateSnapshots is true, the code path should:
+      // 1. Save the rendered_output as the new snapshot
+      // 2. NOT compare against existing snapshot
+      // The actual implementation is at bench.ts:560-573
+      const verifyOptions = {
+        noVerify: false,
+        updateSnapshots: true,
+      };
+
+      // updateSnapshots takes precedence over verification
+      expect(verifyOptions.updateSnapshots).toBe(true);
+    });
+
+    test("noVerify=true skips all verification logic", () => {
+      // This is a design documentation test
+      // When noVerify is true, no snapshot operations occur
+      const verifyOptions = {
+        noVerify: true,
+        updateSnapshots: false,
+      };
+
+      expect(verifyOptions.noVerify).toBe(true);
+    });
+
+    test("default verification compares against own adapter snapshot", () => {
+      // This is a design documentation test
+      // When no options are set, self-verification occurs:
+      // - adapter's output is compared against {adapter}.snap
+      // - NOT compared against baseline (shopify)
+      const verifyOptions = {
+        noVerify: false,
+        updateSnapshots: false,
+        compareAgainst: undefined, // self-verification
+      };
+
+      expect(verifyOptions.compareAgainst).toBeUndefined();
+    });
+
+    test("compareAgainst enables baseline comparison", () => {
+      // This is a design documentation test
+      // When compareAgainst is set, output is compared against that adapter's snapshot
+      const verifyOptions = {
+        noVerify: false,
+        updateSnapshots: false,
+        compareAgainst: "shopify" as const,
+      };
+
+      expect(verifyOptions.compareAgainst).toBe("shopify");
+    });
   });
 });

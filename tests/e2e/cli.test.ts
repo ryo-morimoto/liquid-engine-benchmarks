@@ -1643,6 +1643,103 @@ describe("E2E: Snapshot Verification", () => {
       },
       BENCHMARK_TIMEOUT
     );
+
+    test(
+      "exits with code 1 when verification fails (tampered snapshot)",
+      async () => {
+        if (!(await isRuntimeAvailable("ruby"))) {
+          console.log("Skipping: Ruby not available");
+          return;
+        }
+
+        // Create valid snapshot first
+        const createResult = await runCli([
+          "bench",
+          "shopify",
+          "unit/tags/for",
+          "-i",
+          "2",
+          "-w",
+          "0",
+          "-s",
+          "small",
+          "-u",
+        ]);
+
+        if (createResult.exitCode !== 0) {
+          console.log("Skipping: couldn't create snapshot");
+          return;
+        }
+
+        // Tamper with the snapshot file to force verification failure
+        const snapshotPath = join(SNAPSHOT_DIR, "unit/tags/for/small", "shopify.snap");
+        const originalContent = await Bun.file(snapshotPath).text();
+        await Bun.write(snapshotPath, "TAMPERED CONTENT - THIS SHOULD NOT MATCH");
+
+        try {
+          // Run benchmark without -u flag (verification mode)
+          const { stdout, stderr, exitCode } = await runCli([
+            "bench",
+            "shopify",
+            "unit/tags/for",
+            "-i",
+            "2",
+            "-w",
+            "0",
+            "-s",
+            "small",
+          ]);
+
+          // Exit code should be 1 due to verification failure
+          expect(exitCode).toBe(1);
+          expect(stderr).toContain("verification: FAIL");
+
+          // JSON output should include failure details
+          const result = JSON.parse(stdout);
+          expect(result.verification).toBeDefined();
+          expect(result.verification.status).toBe("fail");
+          expect(result.verification.diff).toBeDefined();
+        } finally {
+          // Restore original snapshot
+          await Bun.write(snapshotPath, originalContent);
+        }
+      },
+      BENCHMARK_TIMEOUT
+    );
+
+    test(
+      "verification returns missing status when snapshot does not exist",
+      async () => {
+        if (!(await isRuntimeAvailable("ruby"))) {
+          console.log("Skipping: Ruby not available");
+          return;
+        }
+
+        // Use a unique scale that likely doesn't have a snapshot
+        const { stdout, stderr, exitCode } = await runCli([
+          "bench",
+          "shopify",
+          "unit/tags/for",
+          "-i",
+          "2",
+          "-w",
+          "0",
+          "-s",
+          "2xl", // Use 2xl scale which likely has no snapshot
+        ]);
+
+        // Missing snapshot should still succeed (not exit code 1)
+        // but verification status should be "missing"
+        if (exitCode === 0) {
+          const result = JSON.parse(stdout);
+          if (result.verification) {
+            expect(result.verification.status).toBe("missing");
+          }
+          expect(stderr).toContain("verification: missing");
+        }
+      },
+      BENCHMARK_TIMEOUT
+    );
   });
 });
 

@@ -170,6 +170,72 @@ describe("snapshot module API", () => {
 
       expect(result.status).toBe("pass");
     });
+
+    test("baseline comparison: returns missing when baseline adapter snapshot does not exist", async () => {
+      const scenario = "api-test/baseline-missing/small";
+
+      // Create only keepsuit snapshot, not shopify
+      await updateSnapshot(scenario, "keepsuit", "keepsuit output", TEST_SNAPSHOT_DIR);
+
+      // Try to compare keepsuit against shopify (which doesn't exist)
+      const result = await verifySnapshot(
+        scenario,
+        "keepsuit",
+        "keepsuit output",
+        "shopify", // compare against shopify
+        TEST_SNAPSHOT_DIR
+      );
+
+      expect(result.status).toBe("missing");
+    });
+
+    test("baseline comparison: uses compareAgainst even when own snapshot exists", async () => {
+      const scenario = "api-test/baseline-priority/small";
+
+      // Create both snapshots with different content
+      await updateSnapshot(scenario, "shopify", "shopify baseline", TEST_SNAPSHOT_DIR);
+      await updateSnapshot(scenario, "keepsuit", "keepsuit own snapshot", TEST_SNAPSHOT_DIR);
+
+      // Compare keepsuit output against shopify (should compare against shopify, not keepsuit)
+      const result = await verifySnapshot(
+        scenario,
+        "keepsuit",
+        "shopify baseline", // matches shopify, not keepsuit
+        "shopify",
+        TEST_SNAPSHOT_DIR
+      );
+
+      expect(result.status).toBe("pass");
+      expect(result.comparedAgainst).toBe("shopify");
+    });
+
+    test("empty snapshot vs non-empty output fails", async () => {
+      const scenario = "api-test/empty-vs-nonempty/small";
+      const adapter = "shopify";
+
+      await updateSnapshot(scenario, adapter, "", TEST_SNAPSHOT_DIR);
+      const result = await verifySnapshot(
+        scenario,
+        adapter,
+        "actual content",
+        undefined,
+        TEST_SNAPSHOT_DIR
+      );
+
+      expect(result.status).toBe("fail");
+      expect(result.diff).toBeDefined();
+    });
+
+    test("non-empty snapshot vs empty output fails", async () => {
+      const scenario = "api-test/nonempty-vs-empty/small";
+      const adapter = "shopify";
+
+      await updateSnapshot(scenario, adapter, "expected content", TEST_SNAPSHOT_DIR);
+      const result = await verifySnapshot(scenario, adapter, "", undefined, TEST_SNAPSHOT_DIR);
+
+      expect(result.status).toBe("fail");
+      expect(result.diff).toBeDefined();
+    });
   });
 
   describe("VerifyResult type", () => {
