@@ -21,10 +21,10 @@ This project provides **reproducible, fair benchmarks** with identical scenarios
 
 Scenario                   |     shopify (base) |           keepsuit |          kalimatas
 ---------------------------|--------------------|--------------------|-------------------
-representative/deep-nested |             0.79ms |      2.1ms (2.62x) |      1.8ms (2.27x)
-representative/easy-loop   |             0.44ms |     0.41ms (0.93x) |     0.24ms (0.56x)
-representative/simple      |             0.23ms |     0.11ms (0.48x) |     0.07ms (0.29x)
-representative/super-large |             18.2ms |     50.8ms (2.80x) |     39.9ms (2.19x)
+representative/deep-nested |             0.79ms |      2.1ms (2.62x) |      1.8ms (2.23x)
+representative/easy-loop   |             0.43ms |     0.41ms (0.94x) |     0.25ms (0.57x)
+representative/simple      |             0.22ms |     0.10ms (0.44x) |     0.07ms (0.30x)
+representative/super-large |             19.0ms |     50.8ms (2.67x) |     40.8ms (2.15x)
 <!-- CI_RESULTS_END -->
 
 ### Scenario Descriptions
