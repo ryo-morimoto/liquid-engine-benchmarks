@@ -11,6 +11,7 @@ export type {
   BenchmarkEntry,
   BenchmarkMeta,
   BenchmarkResult,
+  ConfigLang,
   LebConfig,
   LibraryConfig,
   LibraryName,
@@ -18,7 +19,6 @@ export type {
   RunMetadata,
   RunResult,
   RuntimeVersion,
-  ScenarioExclusion,
 } from "./benchmark";
 
 // Configuration types

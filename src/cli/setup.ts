@@ -103,7 +103,7 @@ export function generateComposerJson(config: LebConfig): string {
   };
 
   for (const lib of phpLibs) {
-    require[lib.package] = "*";
+    require[lib.package] = lib.version;
   }
 
   const composerJson = {
@@ -136,7 +136,7 @@ export function generateGemfile(config: LebConfig): string {
   ];
 
   for (const lib of rubyLibs) {
-    lines.push(`gem "${lib.package}"`);
+    lines.push(`gem "${lib.package}", "${lib.version}"`);
   }
 
   return `${lines.join("\n")}\n`;

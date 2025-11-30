@@ -4,7 +4,7 @@
  * Loads and validates leb.config.json from project root.
  */
 
-import type { ConfigLang, LebConfig, LibraryConfig } from "./types";
+import type { ConfigLang, LebConfig, LibraryConfig } from "../../types";
 
 const CONFIG_FILE = "leb.config.json";
 
@@ -80,33 +80,12 @@ export function getLibraryConfig(
 }
 
 /**
- * Get excluded scenarios for an adapter and specific library version.
+ * Get excluded scenarios for an adapter.
  * @param config - Configuration object
  * @param adapterName - Adapter name
- * @param version - Library version (optional, if not provided returns all exclusions)
  * @returns Set of excluded scenario paths for efficient lookup
  */
-export function getExcludedScenarios(
-  config: LebConfig,
-  adapterName: string,
-  version?: string
-): Set<string> {
+export function getExcludedScenarios(config: LebConfig, adapterName: string): Set<string> {
   const library = getLibraryConfig(config, adapterName);
-  const exclusions = library?.excludeScenarios ?? [];
-
-  const scenarios = new Set<string>();
-
-  for (const exclusion of exclusions) {
-    if (typeof exclusion === "string") {
-      // String exclusion applies to all versions
-      scenarios.add(exclusion);
-    } else {
-      // Object exclusion: check if version matches
-      if (!version || exclusion.version === version) {
-        scenarios.add(exclusion.scenario);
-      }
-    }
-  }
-
-  return scenarios;
+  return new Set(library?.excludeScenarios ?? []);
 }

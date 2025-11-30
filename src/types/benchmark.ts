@@ -16,6 +16,12 @@ export type { SemVer } from "./schema";
 // ============================================================================
 
 /**
+ * Supported configuration languages.
+ * Subset of Lang that have runtime support.
+ */
+export type ConfigLang = "php" | "ruby";
+
+/**
  * Runtime version string (e.g., "8.3" or "8.3.0").
  * @pattern ^[0-9]+\.[0-9]+(\.[0-9]+)?$
  */
@@ -39,21 +45,8 @@ export interface BaselineConfig {
 }
 
 /**
- * Scenario exclusion rule.
- * Can be a simple string (excludes for all versions) or an object with version constraint.
- */
-export type ScenarioExclusion =
-  | string
-  | {
-      /** Scenario path to exclude */
-      scenario: string;
-      /** Library version for which this exclusion applies */
-      version: SemVer;
-    };
-
-/**
  * Library configuration for benchmarking.
- * Defines a target library with its package info and versions to test.
+ * Defines a target library with its package info and version to test.
  */
 export interface LibraryConfig {
   /** Programming language */
@@ -62,10 +55,10 @@ export interface LibraryConfig {
   name: LibraryName;
   /** Package name for the package manager */
   package: string;
-  /** Versions to benchmark */
-  versions: SemVer[];
+  /** Target version to benchmark (latest version recommended) */
+  version: SemVer;
   /** Scenarios to exclude (not supported by this library) */
-  excludeScenarios?: ScenarioExclusion[];
+  excludeScenarios?: string[];
 }
 
 /**

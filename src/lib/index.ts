@@ -41,8 +41,6 @@ export {
   type LebConfig,
   type LibraryConfig,
   loadConfig,
-  type RuntimeConfig,
-  type ScenarioExclusion,
 } from "./config";
 // Environment check module
 export {

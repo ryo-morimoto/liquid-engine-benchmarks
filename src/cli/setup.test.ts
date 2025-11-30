@@ -10,9 +10,9 @@ const mockConfig: LebConfig = {
   runtimes: { php: "8.3", ruby: "3.3" },
   baseline: { library: "shopify", version: "5.6.0" },
   libraries: [
-    { lang: "php", name: "keepsuit", package: "keepsuit/liquid", versions: ["1.0.0"] },
-    { lang: "php", name: "kalimatas", package: "liquid/liquid", versions: ["1.5.0"] },
-    { lang: "ruby", name: "shopify", package: "liquid", versions: ["5.5.0", "5.6.0"] },
+    { lang: "php", name: "keepsuit", package: "keepsuit/liquid", version: "1.0.0" },
+    { lang: "php", name: "kalimatas", package: "liquid/liquid", version: "1.5.0" },
+    { lang: "ruby", name: "shopify", package: "liquid", version: "5.6.0" },
   ],
 };
 
@@ -37,12 +37,12 @@ describe("generateComposerJson", () => {
     expect(json.require.php).toBe(">=8.3");
   });
 
-  test("includes all PHP libraries", () => {
+  test("includes all PHP libraries with version", () => {
     const result = generateComposerJson(mockConfig);
     const json = JSON.parse(result);
 
-    expect(json.require["keepsuit/liquid"]).toBe("*");
-    expect(json.require["liquid/liquid"]).toBe("*");
+    expect(json.require["keepsuit/liquid"]).toBe("1.0.0");
+    expect(json.require["liquid/liquid"]).toBe("1.5.0");
   });
 
   test("excludes Ruby libraries", () => {
@@ -74,10 +74,10 @@ describe("generateGemfile", () => {
     expect(result).toContain('source "https://rubygems.org"');
   });
 
-  test("includes Ruby libraries", () => {
+  test("includes Ruby libraries with version", () => {
     const result = generateGemfile(mockConfig);
 
-    expect(result).toContain('gem "liquid"');
+    expect(result).toContain('gem "liquid", "5.6.0"');
   });
 
   test("excludes PHP libraries", () => {
