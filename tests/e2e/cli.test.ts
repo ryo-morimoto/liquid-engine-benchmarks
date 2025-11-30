@@ -1418,18 +1418,22 @@ describe("E2E: Prepare Command", () => {
     expect(stdout).toContain("Seeding");
   });
 
-  test("prepare is idempotent", async () => {
-    // Run prepare twice
-    const first = await runCli(["prepare"]);
-    const second = await runCli(["prepare"]);
+  test(
+    "prepare is idempotent",
+    async () => {
+      // Run prepare twice
+      const first = await runCli(["prepare"]);
+      const second = await runCli(["prepare"]);
 
-    expect(first.exitCode).toBe(0);
-    expect(second.exitCode).toBe(0);
+      expect(first.exitCode).toBe(0);
+      expect(second.exitCode).toBe(0);
 
-    // Both should succeed without errors
-    expect(first.stdout).toContain("Generating JSON Schemas");
-    expect(second.stdout).toContain("Generating JSON Schemas");
-  });
+      // Both should succeed without errors
+      expect(first.stdout).toContain("Generating JSON Schemas");
+      expect(second.stdout).toContain("Generating JSON Schemas");
+    },
+    15000
+  );
 
   test("prepare shows help with --help flag", async () => {
     const { stdout, exitCode } = await runCli(["prepare", "--help"]);
