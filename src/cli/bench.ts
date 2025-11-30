@@ -70,6 +70,7 @@ interface AllBenchOptions {
   warmup: number;
   format: OutputFormat;
   quiet: boolean;
+  category?: string;
 }
 
 type BenchOptions = SingleBenchOptions | AllBenchOptions;
@@ -104,6 +105,7 @@ function parseCommonFlags(args: string[]): {
   output?: string;
   format?: OutputFormat;
   quiet: boolean;
+  category?: string;
 } {
   // Separate positional arguments from flags
   const allPositional: string[] = [];
@@ -126,11 +128,13 @@ function parseCommonFlags(args: string[]): {
         arg === "-w" ||
         arg === "-o" ||
         arg === "-f" ||
+        arg === "-c" ||
         arg === "--scale" ||
         arg === "--iterations" ||
         arg === "--warmup" ||
         arg === "--output" ||
-        arg === "--format"
+        arg === "--format" ||
+        arg === "--category"
       ) {
         expectingValue = true;
       }
@@ -149,6 +153,7 @@ function parseCommonFlags(args: string[]): {
       output: { type: "string", short: "o" },
       format: { type: "string", short: "f" },
       quiet: { type: "boolean", short: "q" },
+      category: { type: "string", short: "c" },
     },
     strict: true,
     allowPositionals: false,
@@ -195,6 +200,7 @@ function parseCommonFlags(args: string[]): {
     output: values.output,
     format,
     quiet: values.quiet ?? false,
+    category: values.category,
   };
 }
 
@@ -204,7 +210,8 @@ function parseCommonFlags(args: string[]): {
  * @param args - CLI arguments (after 'bench' subcommand)
  */
 export function parseArgs_(args: string[]): BenchOptions {
-  const { positional, scale, iterations, warmup, output, format, quiet } = parseCommonFlags(args);
+  const { positional, scale, iterations, warmup, output, format, quiet, category } =
+    parseCommonFlags(args);
 
   // No positional arguments → "all" mode (run all adapters × all scenarios)
   // Default format for all mode is "table" (comparison table)
@@ -216,6 +223,7 @@ export function parseArgs_(args: string[]): BenchOptions {
       warmup,
       format: format ?? "table",
       quiet,
+      category,
     };
   }
 
@@ -263,12 +271,13 @@ Usage:
 
 Arguments (single mode):
   <adapter>    Adapter name (keepsuit, kalimatas, shopify)
-  <scenario>   Scenario path (e.g., unit/tags/for, composite/for-with-if)
+  <scenario>   Scenario path (e.g., unit/tags/for, representative/simple)
 
 Options:
   -s, --scale <size>       Data scale: small, medium, large, 2xl (default: medium)
   -i, --iterations <n>     Number of measured iterations (default: 100)
   -w, --warmup <n>         Number of warmup iterations (default: 10)
+  -c, --category <cat>     Filter by category (e.g., representative, unit/tags, unit/filters)
   -o, --output <file>      Output file path (single mode only)
   -f, --format <type>      Output format: table, json (default: table for all, json for single)
   -q, --quiet              Suppress progress output
@@ -282,12 +291,15 @@ Examples:
   # Run all benchmarks with comparison table (default)
   leb bench
 
+  # Run only representative benchmarks
+  leb bench -c representative
+
   # Run all benchmarks with JSON output
   leb bench -f json > results.json
 
   # Run single benchmark
   leb bench keepsuit unit/tags/for
-  leb bench shopify composite/for-with-if -s large
+  leb bench shopify representative/simple -s large
   leb bench kalimatas unit/filters/map -i 500 -w 20
 
   # Suppress progress output for scripting
@@ -507,9 +519,14 @@ async function runAll(options: AllBenchOptions): Promise<void> {
   const config = await loadConfig();
   const baseline = config.baseline.library as AdapterName;
 
-  // Get all scenarios (excluding partials)
+  // Get all scenarios (excluding partials), optionally filtered by category
   const loader = createScenarioLoader();
-  const allScenarios = loader.listAll().filter((s) => s.category !== "partials");
+  let allScenarios = loader.listAll().filter((s) => s.category !== "partials");
+
+  // Apply category filter if specified
+  if (options.category) {
+    allScenarios = allScenarios.filter((s) => s.category === options.category);
+  }
 
   // Order adapters: baseline first, then others
   const adapters = [baseline, ...ADAPTER_NAMES.filter((a) => a !== baseline)] as const;
@@ -520,7 +537,7 @@ async function runAll(options: AllBenchOptions): Promise<void> {
   log(`bench: running all benchmarks`);
   log(`  adapters: ${adapters.join(", ")}`);
   log(`  baseline: ${baseline}`);
-  log(`  scenarios: ${allScenarios.length}`);
+  log(`  scenarios: ${allScenarios.length}${options.category ? ` (category: ${options.category})` : ""}`);
   log(`  scale=${options.scale} iterations=${options.iterations} warmup=${options.warmup}`);
   log(`  format: ${options.format}`);
   log("");

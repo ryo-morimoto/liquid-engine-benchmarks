@@ -113,8 +113,8 @@ jobs:
       # Run benchmark and update README
       - name: Run benchmark
         run: |
-          # Run benchmark and capture table output
-          table_output=$(bun src/run.ts bench -f table -q)
+          # Run representative benchmarks only (focused scalability tests)
+          table_output=$(bun src/run.ts bench -c representative -f table -q)
 
           # Update README.md between markers (no code block for markdown table rendering)
           awk -v table="$table_output" '
