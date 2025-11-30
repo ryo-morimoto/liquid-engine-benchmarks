@@ -38,6 +38,10 @@ concurrency:
   group: benchmark-${{ github.ref }}
   cancel-in-progress: false
 
+# Required for git-auto-commit-action to push changes
+permissions:
+  contents: write
+
 jobs:
   bench:
     name: Run Benchmarks
@@ -144,7 +148,5 @@ jobs:
       - name: Commit README updates
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "docs: update benchmark results [skip ci]"
+          commit_message: "docs: update benchmark results"
           file_pattern: README.md
-          commit_user_name: github-actions[bot]
-          commit_user_email: github-actions[bot]@users.noreply.github.com
