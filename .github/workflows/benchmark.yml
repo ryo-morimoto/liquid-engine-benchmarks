@@ -95,6 +95,51 @@ jobs:
           bun src/run.ts setup php
           composer install --no-interaction
 
+      # Diagnose PHP opcache configuration
+      - name: Diagnose PHP environment
+        run: |
+          echo "=== PHP Version ==="
+          php -v
+          echo ""
+          echo "=== OPcache Module ==="
+          php -m | grep -i opcache || echo "OPcache NOT loaded"
+          echo ""
+          echo "=== OPcache Settings (default) ==="
+          php -i | grep -E "^opcache\.(enable|jit|memory)" || echo "No opcache settings"
+          echo ""
+          echo "=== OPcache Settings (with CLI flag) ==="
+          php -d opcache.enable_cli=1 -r '
+            echo "opcache.enable: " . ini_get("opcache.enable") . "\n";
+            echo "opcache.enable_cli: " . ini_get("opcache.enable_cli") . "\n";
+            echo "opcache.jit: " . ini_get("opcache.jit") . "\n";
+            echo "opcache.jit_buffer_size: " . ini_get("opcache.jit_buffer_size") . "\n";
+          '
+          echo ""
+          echo "=== Quick Benchmark Test ==="
+          php -d opcache.enable_cli=1 -r '
+            require_once "vendor/autoload.php";
+            use Keepsuit\Liquid\EnvironmentFactory;
+
+            $env = EnvironmentFactory::new()->build();
+            $template = $env->parseString("{% for i in (1..100) %}{{ i }}{% endfor %}");
+
+            // Warmup
+            for ($i = 0; $i < 5; $i++) {
+              $template->render($env->newRenderContext());
+            }
+
+            // Measure
+            $times = [];
+            for ($i = 0; $i < 10; $i++) {
+              $start = hrtime(true);
+              $template->render($env->newRenderContext());
+              $times[] = (hrtime(true) - $start) / 1_000_000;
+            }
+
+            echo "Render times (ms): " . implode(", ", array_map(fn($t) => round($t, 3), $times)) . "\n";
+            echo "Average: " . round(array_sum($times) / count($times), 3) . "ms\n";
+          '
+
       # Setup Ruby
       - name: Generate Gemfile
         run: bun src/run.ts setup ruby
