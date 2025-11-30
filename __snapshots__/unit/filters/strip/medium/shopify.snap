@@ -1,0 +1,4 @@
+
+Strip: [hello world]
+Lstrip: [hello world  ]
+Rstrip: [  hello world]

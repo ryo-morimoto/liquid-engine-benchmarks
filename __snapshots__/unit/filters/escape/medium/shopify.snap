@@ -1,0 +1,2 @@
+&lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt;
+&lt;already&gt;
