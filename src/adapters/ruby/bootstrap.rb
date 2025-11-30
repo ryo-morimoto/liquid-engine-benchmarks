@@ -7,6 +7,7 @@
 # Provides stdin/stdout handling and timing utilities.
 #
 
+require 'bundler/setup'
 require 'json'
 
 ##

@@ -96,22 +96,14 @@ jobs:
           composer install --no-interaction
 
       # Setup Ruby
+      - name: Generate Gemfile
+        run: bun src/run.ts setup ruby
+
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ steps.config.outputs.ruby_version }}
-
-      - name: Cache Bundler
-        uses: actions/cache@v4
-        with:
-          path: vendor/bundle
-          key: bundler-${{ hashFiles('Gemfile.lock') }}
-
-      - name: Install Ruby dependencies
-        run: |
-          bun src/run.ts setup ruby
-          bundle config set --local path vendor/bundle
-          bundle install
+          bundler-cache: true
 
       # Seed benchmark database
       - name: Seed database
