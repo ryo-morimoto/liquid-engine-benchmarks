@@ -15,33 +15,51 @@ scenarios/
 ├── unit/           # Single feature tests
 │   ├── tags/       # Tag-specific tests (for, if, include, etc.)
 │   └── filters/    # Filter-specific tests (map, where, sum, etc.)
-├── composite/      # Combined feature tests
-└── partials/       # Shared partials for include/render
+├── representative/ # Scalability tests (simple to super-large)
+└── partials/       # Shared partials
 ```
 
 ## Scenario Categories
 
-### unit/tags/
+### unit/tags/ (11 files)
 
-Tests individual Liquid tags in isolation. Each scenario focuses on a single tag's performance characteristics (e.g., loop iteration, conditionals, variable assignment).
+Scenarios for individual Liquid tags (1:1 mapping with tag names):
+
+| File | Tag | Description |
+|------|-----|-------------|
+| `for.liquid` | for | Loop iteration |
+| `if.liquid` | if | Conditional logic |
+| `unless.liquid` | unless | Negated conditional |
+| `case.liquid` | case/when | Switch-style conditional |
+| `assign.liquid` | assign | Variable assignment |
+| `capture.liquid` | capture | String capture |
+| `include.liquid` | include | Partial inclusion |
+| `render.liquid` | render | Scope-isolated partial |
+| `echo.liquid` | echo | Alternative output syntax |
+| `liquid.liquid` | liquid | Multi-line syntax |
+| `extends.liquid` | extends/block | Template inheritance |
 
 ### unit/filters/
 
 Tests individual Liquid filters or closely related filter groups. Measures the overhead of data transformation operations (e.g., array manipulation, string processing, math operations).
 
-### composite/
+### representative/ (4 files)
 
-Tests realistic combinations of multiple features. Measures how tags and filters perform together in common patterns (e.g., filtering data then iterating, conditionals inside loops).
+Scalability tests measuring performance across different complexity levels:
 
-### partials/
+| File | Complexity | Description |
+|------|------------|-------------|
+| `simple.liquid` | O(1) | Variable output only, minimal overhead |
+| `easy-loop.liquid` | O(n) | Basic for loop iteration |
+| `deep-nested.liquid` | O(n × m) | Nested loops with conditionals |
+| `super-large.liquid` | O(n × m × k) | Full e-commerce page (~800 lines) |
 
-Shared template components used by include/render scenarios. Not benchmarked directly.
+### partials/ (2 files)
 
-## Naming Conventions
+Shared partials for include/render scenarios:
 
-- `{feature}.liquid` - Basic usage of a feature (e.g., `for.liquid`, `map.liquid`)
-- `{feature}-{variant}.liquid` - Variant of a feature (e.g., `if-nested.liquid`, `if-compound.liquid`)
-- `{feature}-with-{feature}.liquid` - Feature combinations (e.g., `for-with-if.liquid`)
+- `product_card.liquid` - Product display component
+- `base_layout.liquid` - Base layout for extends/block
 
 ## Feature Support
 

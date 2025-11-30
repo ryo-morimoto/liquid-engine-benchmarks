@@ -1,0 +1,828 @@
+{%- comment -%}
+Representative test: Super large template
+Simulates a real-world e-commerce page with extensive template logic.
+Tests scalability with complex nested structures, multiple filter chains,
+and heavy conditional processing across ~1000 lines.
+Complexity: O(n * m * k) with significant constant factors
+{%- endcomment -%}
+
+{%- comment -%} ========== SECTION 1: Data Preparation ========== {%- endcomment -%}
+{% assign all_products = products %}
+{% assign sorted_by_price = all_products | sort: "price" %}
+{% assign sorted_by_title = all_products | sort: "title" %}
+{% assign product_count = all_products | size %}
+{% assign first_product = all_products | first %}
+{% assign last_product = all_products | last %}
+
+{% assign expensive_products = sorted_by_price | where: "price", 100 %}
+{% assign cheap_products = sorted_by_price | where: "price", 50 %}
+{% assign mid_range_products = sorted_by_price %}
+
+{% assign featured_count = 0 %}
+{% assign sale_count = 0 %}
+{% assign new_count = 0 %}
+{% assign bestseller_count = 0 %}
+
+{%- comment -%} ========== SECTION 2: Statistics Calculation ========== {%- endcomment -%}
+{% assign total_variants = 0 %}
+{% assign available_variants = 0 %}
+{% assign total_images = 0 %}
+{% assign total_price = 0 %}
+
+{% for product in all_products %}
+  {% assign variant_count = product.variants | size %}
+  {% assign total_variants = total_variants | plus: variant_count %}
+  {% assign image_count = product.images | size %}
+  {% assign total_images = total_images | plus: image_count %}
+  {% assign total_price = total_price | plus: product.price %}
+
+  {% for variant in product.variants %}
+    {% if variant.available %}
+      {% assign available_variants = available_variants | plus: 1 %}
+    {% endif %}
+  {% endfor %}
+{% endfor %}
+
+{% assign avg_price = total_price | divided_by: product_count %}
+{% assign avg_variants = total_variants | divided_by: product_count %}
+{% assign availability_rate = available_variants | times: 100 | divided_by: total_variants %}
+
+{%- comment -%} ========== SECTION 3: Page Header ========== {%- endcomment -%}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ collection.title | default: "All Products" }} | E-Commerce Store</title>
+  <meta name="description" content="{{ collection.description | default: 'Browse our collection of products' | truncate: 160 }}">
+  <meta name="keywords" content="{{ all_products | map: 'title' | join: ', ' | truncate: 200 }}">
+</head>
+<body>
+
+{%- comment -%} ========== SECTION 4: Navigation ========== {%- endcomment -%}
+<header class="site-header">
+  <nav class="main-nav">
+    <div class="nav-logo">
+      <a href="/">Store Logo</a>
+    </div>
+    <ul class="nav-menu">
+      <li><a href="/">Home</a></li>
+      <li><a href="/collections">Collections</a></li>
+      <li><a href="/products">All Products</a></li>
+      <li><a href="/sale">Sale</a></li>
+      <li><a href="/new">New Arrivals</a></li>
+      <li><a href="/contact">Contact</a></li>
+    </ul>
+    <div class="nav-user">
+      {% if user %}
+        <span class="user-greeting">Hello, {{ user.name | split: ' ' | first | capitalize }}</span>
+        <a href="/account">My Account</a>
+        <a href="/cart">Cart ({{ cart_items | size }})</a>
+      {% else %}
+        <a href="/login">Login</a>
+        <a href="/register">Register</a>
+      {% endif %}
+    </div>
+  </nav>
+</header>
+
+{%- comment -%} ========== SECTION 5: Breadcrumbs ========== {%- endcomment -%}
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+  <ol>
+    <li><a href="/">Home</a></li>
+    <li><a href="/collections">Collections</a></li>
+    {% if collection %}
+      <li><a href="/collections/{{ collection.id }}">{{ collection.title }}</a></li>
+    {% endif %}
+    <li aria-current="page">All Products</li>
+  </ol>
+</nav>
+
+{%- comment -%} ========== SECTION 6: Page Title & Stats ========== {%- endcomment -%}
+<main class="main-content">
+  <section class="page-header">
+    <h1>{{ collection.title | default: "All Products" | upcase }}</h1>
+    <p class="collection-description">{{ collection.description | default: "Browse our complete collection" }}</p>
+
+    <div class="collection-stats">
+      <div class="stat-item">
+        <span class="stat-value">{{ product_count }}</span>
+        <span class="stat-label">Products</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value">{{ total_variants }}</span>
+        <span class="stat-label">Variants</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value">${{ avg_price | round: 2 }}</span>
+        <span class="stat-label">Avg Price</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value">{{ availability_rate }}%</span>
+        <span class="stat-label">In Stock</span>
+      </div>
+    </div>
+  </section>
+
+{%- comment -%} ========== SECTION 7: Filters Sidebar ========== {%- endcomment -%}
+  <aside class="filters-sidebar">
+    <h2>Filters</h2>
+
+    <div class="filter-group">
+      <h3>Price Range</h3>
+      <ul class="filter-options">
+        <li><label><input type="checkbox" name="price" value="0-25"> Under $25</label></li>
+        <li><label><input type="checkbox" name="price" value="25-50"> $25 - $50</label></li>
+        <li><label><input type="checkbox" name="price" value="50-100"> $50 - $100</label></li>
+        <li><label><input type="checkbox" name="price" value="100-200"> $100 - $200</label></li>
+        <li><label><input type="checkbox" name="price" value="200+"> $200+</label></li>
+      </ul>
+    </div>
+
+    <div class="filter-group">
+      <h3>Availability</h3>
+      <ul class="filter-options">
+        <li><label><input type="checkbox" name="availability" value="in-stock"> In Stock ({{ available_variants }})</label></li>
+        <li><label><input type="checkbox" name="availability" value="out-of-stock"> Out of Stock</label></li>
+      </ul>
+    </div>
+
+    <div class="filter-group">
+      <h3>Sort By</h3>
+      <select name="sort">
+        <option value="title-asc">Name: A-Z</option>
+        <option value="title-desc">Name: Z-A</option>
+        <option value="price-asc">Price: Low to High</option>
+        <option value="price-desc">Price: High to Low</option>
+        <option value="date-desc">Newest First</option>
+        <option value="bestseller">Best Sellers</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <h3>Quick Stats</h3>
+      <ul class="quick-stats">
+        <li>Total Products: {{ product_count }}</li>
+        <li>Total Variants: {{ total_variants }}</li>
+        <li>Available: {{ available_variants }}</li>
+        <li>Images: {{ total_images }}</li>
+        {% assign min_price_product = sorted_by_price | first %}
+        {% assign max_price_product = sorted_by_price | last %}
+        <li>Min Price: ${{ min_price_product.price }}</li>
+        <li>Max Price: ${{ max_price_product.price }}</li>
+      </ul>
+    </div>
+  </aside>
+
+{%- comment -%} ========== SECTION 8: Product Grid ========== {%- endcomment -%}
+  <section class="product-grid">
+    <div class="grid-header">
+      <span class="result-count">Showing {{ product_count }} products</span>
+      <div class="view-options">
+        <button class="view-grid active">Grid</button>
+        <button class="view-list">List</button>
+      </div>
+    </div>
+
+    <div class="products-container">
+      {% for product in all_products %}
+        {% assign product_index = forloop.index %}
+        {% assign is_first = forloop.first %}
+        {% assign is_last = forloop.last %}
+        {% assign row_position = forloop.index | modulo: 4 %}
+
+        {% assign available_count = 0 %}
+        {% assign min_variant_price = 999999 %}
+        {% assign max_variant_price = 0 %}
+
+        {% for variant in product.variants %}
+          {% if variant.available %}
+            {% assign available_count = available_count | plus: 1 %}
+          {% endif %}
+          {% if variant.price < min_variant_price %}
+            {% assign min_variant_price = variant.price %}
+          {% endif %}
+          {% if variant.price > max_variant_price %}
+            {% assign max_variant_price = variant.price %}
+          {% endif %}
+        {% endfor %}
+
+        {% assign has_multiple_prices = false %}
+        {% if min_variant_price != max_variant_price %}
+          {% assign has_multiple_prices = true %}
+        {% endif %}
+
+        {% assign is_on_sale = false %}
+        {% if product.compare_at_price > product.price %}
+          {% assign is_on_sale = true %}
+          {% assign discount_amount = product.compare_at_price | minus: product.price %}
+          {% assign discount_percent = discount_amount | times: 100 | divided_by: product.compare_at_price | round %}
+        {% endif %}
+
+        {% assign stock_status = "in-stock" %}
+        {% if available_count == 0 %}
+          {% assign stock_status = "out-of-stock" %}
+        {% elsif available_count < 3 %}
+          {% assign stock_status = "low-stock" %}
+        {% endif %}
+
+        <article class="product-card product-card--{{ stock_status }}" data-product-id="{{ product.id }}" data-index="{{ product_index }}">
+
+          {%- comment -%} Product Badges {%- endcomment -%}
+          <div class="product-badges">
+            {% if is_on_sale %}
+              <span class="badge badge--sale">-{{ discount_percent }}%</span>
+            {% endif %}
+            {% if product_index <= 3 %}
+              <span class="badge badge--new">New</span>
+            {% endif %}
+            {% if stock_status == "low-stock" %}
+              <span class="badge badge--low-stock">Low Stock</span>
+            {% endif %}
+            {% if stock_status == "out-of-stock" %}
+              <span class="badge badge--sold-out">Sold Out</span>
+            {% endif %}
+          </div>
+
+          {%- comment -%} Product Image Gallery {%- endcomment -%}
+          <div class="product-images">
+            {% assign image_count = product.images | size %}
+            {% if image_count > 0 %}
+              {% assign primary_image = product.images | first %}
+              <img
+                src="{{ primary_image.src }}"
+                alt="{{ primary_image.alt | default: product.title | escape }}"
+                class="product-image product-image--primary"
+                loading="{% if product_index <= 8 %}eager{% else %}lazy{% endif %}"
+                width="300"
+                height="300"
+              >
+              {% if image_count > 1 %}
+                {% assign secondary_image = product.images | last %}
+                <img
+                  src="{{ secondary_image.src }}"
+                  alt="{{ secondary_image.alt | default: product.title | escape }}"
+                  class="product-image product-image--hover"
+                  loading="lazy"
+                  width="300"
+                  height="300"
+                >
+              {% endif %}
+            {% else %}
+              <div class="product-image product-image--placeholder">
+                <span>No Image</span>
+              </div>
+            {% endif %}
+
+            {% if image_count > 2 %}
+              <div class="image-count">+{{ image_count | minus: 2 }} more</div>
+            {% endif %}
+          </div>
+
+          {%- comment -%} Quick Actions {%- endcomment -%}
+          <div class="product-quick-actions">
+            <button class="action-btn action-btn--wishlist" aria-label="Add to wishlist">
+              <svg class="icon"><use href="#icon-heart"></use></svg>
+            </button>
+            <button class="action-btn action-btn--quickview" aria-label="Quick view">
+              <svg class="icon"><use href="#icon-eye"></use></svg>
+            </button>
+            <button class="action-btn action-btn--compare" aria-label="Add to compare">
+              <svg class="icon"><use href="#icon-compare"></use></svg>
+            </button>
+          </div>
+
+          {%- comment -%} Product Info {%- endcomment -%}
+          <div class="product-info">
+            <h3 class="product-title">
+              <a href="/products/{{ product.id }}">
+                {{ product.title | truncate: 50 }}
+              </a>
+            </h3>
+
+            <p class="product-vendor">{{ product.vendor | default: "Unknown Brand" }}</p>
+
+            <div class="product-rating">
+              {% assign rating = product_index | modulo: 5 | plus: 1 %}
+              {% for i in (1..5) %}
+                {% if i <= rating %}
+                  <span class="star star--filled">★</span>
+                {% else %}
+                  <span class="star star--empty">☆</span>
+                {% endif %}
+              {% endfor %}
+              <span class="rating-count">({{ product_index | times: 7 }} reviews)</span>
+            </div>
+
+            <div class="product-price">
+              {% if has_multiple_prices %}
+                <span class="price-range">
+                  ${{ min_variant_price | round: 2 }} - ${{ max_variant_price | round: 2 }}
+                </span>
+              {% else %}
+                {% if is_on_sale %}
+                  <span class="price-compare">${{ product.compare_at_price | round: 2 }}</span>
+                  <span class="price-current price-current--sale">${{ product.price | round: 2 }}</span>
+                  <span class="price-savings">Save ${{ discount_amount | round: 2 }}</span>
+                {% else %}
+                  <span class="price-current">${{ product.price | round: 2 }}</span>
+                {% endif %}
+              {% endif %}
+            </div>
+
+            <p class="product-description">
+              {{ product.description | default: "No description available" | strip_html | truncate: 100 }}
+            </p>
+
+            {%- comment -%} Variant Options {%- endcomment -%}
+            {% assign variant_count = product.variants | size %}
+            {% if variant_count > 1 %}
+              <div class="product-variants">
+                <span class="variant-label">{{ variant_count }} options available:</span>
+                <div class="variant-swatches">
+                  {% for variant in product.variants limit: 5 %}
+                    <button
+                      class="variant-swatch {% unless variant.available %}variant-swatch--disabled{% endunless %}"
+                      data-variant-id="{{ variant.id }}"
+                      {% unless variant.available %}disabled{% endunless %}
+                      title="{{ variant.title }}"
+                    >
+                      {{ variant.title | truncate: 10, "" }}
+                    </button>
+                  {% endfor %}
+                  {% if variant_count > 5 %}
+                    <span class="variant-more">+{{ variant_count | minus: 5 }} more</span>
+                  {% endif %}
+                </div>
+              </div>
+            {% endif %}
+
+            {%- comment -%} Stock Status {%- endcomment -%}
+            <div class="product-stock">
+              {% case stock_status %}
+                {% when "in-stock" %}
+                  <span class="stock-indicator stock-indicator--available">
+                    <svg class="icon"><use href="#icon-check"></use></svg>
+                    In Stock ({{ available_count }} available)
+                  </span>
+                {% when "low-stock" %}
+                  <span class="stock-indicator stock-indicator--low">
+                    <svg class="icon"><use href="#icon-warning"></use></svg>
+                    Low Stock - Only {{ available_count }} left!
+                  </span>
+                {% when "out-of-stock" %}
+                  <span class="stock-indicator stock-indicator--unavailable">
+                    <svg class="icon"><use href="#icon-x"></use></svg>
+                    Out of Stock
+                  </span>
+              {% endcase %}
+            </div>
+
+            {%- comment -%} Add to Cart {%- endcomment -%}
+            <div class="product-actions">
+              {% if stock_status != "out-of-stock" %}
+                <div class="quantity-selector">
+                  <button class="qty-btn qty-btn--minus" aria-label="Decrease quantity">-</button>
+                  <input type="number" class="qty-input" value="1" min="1" max="{{ available_count }}">
+                  <button class="qty-btn qty-btn--plus" aria-label="Increase quantity">+</button>
+                </div>
+                <button class="btn btn--add-to-cart" data-product-id="{{ product.id }}">
+                  Add to Cart
+                </button>
+              {% else %}
+                <button class="btn btn--notify" data-product-id="{{ product.id }}">
+                  Notify When Available
+                </button>
+              {% endif %}
+            </div>
+          </div>
+
+          {%- comment -%} Product Meta {%- endcomment -%}
+          <div class="product-meta">
+            <span class="meta-item">SKU: PROD-{{ product.id | times: 1000 }}</span>
+            <span class="meta-item">Category: {{ product.type | default: "General" }}</span>
+            {% assign tag_list = product.tags | default: "" %}
+            {% if tag_list != "" %}
+              <span class="meta-item">Tags: {{ tag_list | join: ", " }}</span>
+            {% endif %}
+          </div>
+        </article>
+
+        {%- comment -%} Insert promotional banner every 8 products {%- endcomment -%}
+        {% assign banner_check = product_index | modulo: 8 %}
+        {% if banner_check == 0 and is_last == false %}
+          <div class="promo-banner promo-banner--inline">
+            <div class="promo-content">
+              <h3>Special Offer!</h3>
+              <p>Use code SAVE{{ product_index }} for {{ product_index }}% off your next order</p>
+              <a href="/sale" class="btn btn--promo">Shop Sale</a>
+            </div>
+          </div>
+        {% endif %}
+
+      {% endfor %}
+    </div>
+
+{%- comment -%} ========== SECTION 9: Pagination ========== {%- endcomment -%}
+    <nav class="pagination" aria-label="Product pagination">
+      <ul class="pagination-list">
+        <li class="pagination-item">
+          <a href="?page=1" class="pagination-link pagination-link--prev" aria-label="Previous page">
+            &laquo; Previous
+          </a>
+        </li>
+        {% for i in (1..5) %}
+          <li class="pagination-item">
+            <a href="?page={{ i }}" class="pagination-link {% if i == 1 %}pagination-link--active{% endif %}">
+              {{ i }}
+            </a>
+          </li>
+        {% endfor %}
+        <li class="pagination-item pagination-ellipsis">...</li>
+        <li class="pagination-item">
+          <a href="?page=10" class="pagination-link">10</a>
+        </li>
+        <li class="pagination-item">
+          <a href="?page=2" class="pagination-link pagination-link--next" aria-label="Next page">
+            Next &raquo;
+          </a>
+        </li>
+      </ul>
+      <p class="pagination-info">
+        Showing 1-{{ product_count }} of {{ product_count | times: 10 }} products
+      </p>
+    </nav>
+  </section>
+
+{%- comment -%} ========== SECTION 10: Recently Viewed ========== {%- endcomment -%}
+  <section class="recently-viewed">
+    <h2>Recently Viewed</h2>
+    <div class="recently-viewed-grid">
+      {% for product in all_products limit: 4 %}
+        <div class="mini-product-card">
+          {% assign first_image = product.images | first %}
+          {% if first_image %}
+            <img src="{{ first_image.src }}" alt="{{ product.title | escape }}" loading="lazy">
+          {% endif %}
+          <h4>{{ product.title | truncate: 30 }}</h4>
+          <span class="mini-price">${{ product.price | round: 2 }}</span>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+{%- comment -%} ========== SECTION 11: Related Collections ========== {%- endcomment -%}
+  <section class="related-collections">
+    <h2>Shop by Category</h2>
+    <div class="collections-grid">
+      {% for collection in collections limit: 6 %}
+        <a href="/collections/{{ collection.id }}" class="collection-card">
+          <div class="collection-image">
+            {% assign col_product = collection.products | first %}
+            {% if col_product %}
+              {% assign col_image = col_product.images | first %}
+              {% if col_image %}
+                <img src="{{ col_image.src }}" alt="{{ collection.title | escape }}" loading="lazy">
+              {% endif %}
+            {% endif %}
+          </div>
+          <h3>{{ collection.title }}</h3>
+          <span class="collection-count">{{ collection.products | size }} products</span>
+        </a>
+      {% endfor %}
+    </div>
+  </section>
+
+{%- comment -%} ========== SECTION 12: Featured Products Table ========== {%- endcomment -%}
+  <section class="featured-table">
+    <h2>Product Comparison</h2>
+    <div class="table-responsive">
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Price</th>
+            <th>Variants</th>
+            <th>Stock</th>
+            <th>Rating</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for product in sorted_by_price limit: 10 %}
+            {% assign p_variants = product.variants | size %}
+            {% assign p_available = 0 %}
+            {% for v in product.variants %}
+              {% if v.available %}
+                {% assign p_available = p_available | plus: 1 %}
+              {% endif %}
+            {% endfor %}
+            {% assign p_rating = forloop.index | modulo: 5 | plus: 1 %}
+            <tr>
+              <td>
+                <div class="table-product">
+                  {% assign t_image = product.images | first %}
+                  {% if t_image %}
+                    <img src="{{ t_image.src }}" alt="{{ product.title | escape }}" width="50" height="50">
+                  {% endif %}
+                  <span>{{ product.title | truncate: 25 }}</span>
+                </div>
+              </td>
+              <td>${{ product.price | round: 2 }}</td>
+              <td>{{ p_variants }}</td>
+              <td>
+                {% if p_available > 0 %}
+                  <span class="status-badge status-badge--success">{{ p_available }} in stock</span>
+                {% else %}
+                  <span class="status-badge status-badge--danger">Out of stock</span>
+                {% endif %}
+              </td>
+              <td>
+                {% for i in (1..5) %}{% if i <= p_rating %}★{% else %}☆{% endif %}{% endfor %}
+              </td>
+              <td>
+                <button class="btn btn--sm btn--primary">Add</button>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+{%- comment -%} ========== SECTION 13: Price Breakdown ========== {%- endcomment -%}
+  <section class="price-analysis">
+    <h2>Price Analysis</h2>
+    <div class="price-stats-grid">
+      <div class="price-stat-card">
+        <h3>Under $25</h3>
+        {% assign under_25_count = 0 %}
+        {% for p in all_products %}
+          {% if p.price < 25 %}
+            {% assign under_25_count = under_25_count | plus: 1 %}
+          {% endif %}
+        {% endfor %}
+        <span class="stat-number">{{ under_25_count }}</span>
+        <span class="stat-label">products</span>
+      </div>
+      <div class="price-stat-card">
+        <h3>$25 - $50</h3>
+        {% assign range_25_50_count = 0 %}
+        {% for p in all_products %}
+          {% if p.price >= 25 and p.price < 50 %}
+            {% assign range_25_50_count = range_25_50_count | plus: 1 %}
+          {% endif %}
+        {% endfor %}
+        <span class="stat-number">{{ range_25_50_count }}</span>
+        <span class="stat-label">products</span>
+      </div>
+      <div class="price-stat-card">
+        <h3>$50 - $100</h3>
+        {% assign range_50_100_count = 0 %}
+        {% for p in all_products %}
+          {% if p.price >= 50 and p.price < 100 %}
+            {% assign range_50_100_count = range_50_100_count | plus: 1 %}
+          {% endif %}
+        {% endfor %}
+        <span class="stat-number">{{ range_50_100_count }}</span>
+        <span class="stat-label">products</span>
+      </div>
+      <div class="price-stat-card">
+        <h3>$100+</h3>
+        {% assign over_100_count = 0 %}
+        {% for p in all_products %}
+          {% if p.price >= 100 %}
+            {% assign over_100_count = over_100_count | plus: 1 %}
+          {% endif %}
+        {% endfor %}
+        <span class="stat-number">{{ over_100_count }}</span>
+        <span class="stat-label">products</span>
+      </div>
+    </div>
+  </section>
+
+{%- comment -%} ========== SECTION 14: Variant Deep Dive ========== {%- endcomment -%}
+  <section class="variant-analysis">
+    <h2>Variant Inventory Status</h2>
+    {% for product in all_products limit: 5 %}
+      <div class="variant-product-block">
+        <h3>{{ product.title }}</h3>
+        <div class="variant-grid">
+          {% for variant in product.variants %}
+            <div class="variant-item {% if variant.available %}variant-item--available{% else %}variant-item--unavailable{% endif %}">
+              <span class="variant-name">{{ variant.title }}</span>
+              <span class="variant-sku">SKU: {{ variant.sku | default: "N/A" }}</span>
+              <span class="variant-price">${{ variant.price | round: 2 }}</span>
+              {% if variant.available %}
+                <span class="variant-stock">In Stock</span>
+              {% else %}
+                <span class="variant-stock variant-stock--out">Out of Stock</span>
+              {% endif %}
+              {% if variant.compare_at_price > variant.price %}
+                {% assign v_discount = variant.compare_at_price | minus: variant.price %}
+                <span class="variant-savings">Save ${{ v_discount | round: 2 }}</span>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endfor %}
+  </section>
+
+{%- comment -%} ========== SECTION 15: Image Gallery ========== {%- endcomment -%}
+  <section class="product-gallery">
+    <h2>Product Gallery</h2>
+    <div class="gallery-masonry">
+      {% for product in all_products %}
+        {% for image in product.images %}
+          <figure class="gallery-item">
+            <img
+              src="{{ image.src }}"
+              alt="{{ image.alt | default: product.title | escape }}"
+              loading="lazy"
+            >
+            <figcaption>
+              {{ product.title }} - Image {{ forloop.index }}
+            </figcaption>
+          </figure>
+        {% endfor %}
+      {% endfor %}
+    </div>
+  </section>
+
+{%- comment -%} ========== SECTION 16: Search Results Summary ========== {%- endcomment -%}
+  <section class="search-summary">
+    <h2>Search & Filter Summary</h2>
+    <div class="summary-grid">
+      <div class="summary-card">
+        <h3>By First Letter</h3>
+        <ul class="letter-list">
+          {% assign letters = "A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z" | split: "," %}
+          {% for letter in letters %}
+            {% assign letter_count = 0 %}
+            {% for p in all_products %}
+              {% assign first_char = p.title | slice: 0 | upcase %}
+              {% if first_char == letter %}
+                {% assign letter_count = letter_count | plus: 1 %}
+              {% endif %}
+            {% endfor %}
+            {% if letter_count > 0 %}
+              <li><a href="?letter={{ letter }}">{{ letter }} ({{ letter_count }})</a></li>
+            {% endif %}
+          {% endfor %}
+        </ul>
+      </div>
+
+      <div class="summary-card">
+        <h3>Price Ranges</h3>
+        <div class="price-histogram">
+          {%- comment -%} Define price range boundaries as separate lists for keepsuit compatibility {%- endcomment -%}
+          {% assign range_labels = "0-25,25-50,50-75,75-100,100-150,150-200,200+" | split: "," %}
+          {% assign range_mins = "0,25,50,75,100,150,200" | split: "," %}
+          {% assign range_maxs = "25,50,75,100,150,200,999999" | split: "," %}
+          {% for range in range_labels %}
+            {% assign range_count = 0 %}
+            {% assign range_min = range_mins[forloop.index0] | plus: 0 %}
+            {% assign range_max = range_maxs[forloop.index0] | plus: 0 %}
+            {% for p in all_products %}
+              {% if p.price >= range_min and p.price < range_max %}
+                {% assign range_count = range_count | plus: 1 %}
+              {% endif %}
+            {% endfor %}
+            <div class="histogram-bar" style="--count: {{ range_count }}">
+              <span class="bar-label">${{ range }}</span>
+              <span class="bar-value">{{ range_count }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </section>
+
+{%- comment -%} ========== SECTION 17: Newsletter & CTA ========== {%- endcomment -%}
+  <section class="newsletter-section">
+    <div class="newsletter-content">
+      <h2>Stay Updated</h2>
+      <p>Subscribe to our newsletter for exclusive deals and new arrivals.</p>
+      <form class="newsletter-form" action="/newsletter" method="post">
+        <input type="email" name="email" placeholder="Enter your email" required>
+        <button type="submit" class="btn btn--primary">Subscribe</button>
+      </form>
+      <p class="newsletter-disclaimer">
+        By subscribing, you agree to our Terms of Service and Privacy Policy.
+        We currently have {{ product_count }} products across {{ collections | size }} collections.
+      </p>
+    </div>
+  </section>
+
+{%- comment -%} ========== SECTION 18: Trust Badges ========== {%- endcomment -%}
+  <section class="trust-badges">
+    <div class="badge-item">
+      <svg class="badge-icon"><use href="#icon-shipping"></use></svg>
+      <h4>Free Shipping</h4>
+      <p>On orders over $50</p>
+    </div>
+    <div class="badge-item">
+      <svg class="badge-icon"><use href="#icon-return"></use></svg>
+      <h4>Easy Returns</h4>
+      <p>30-day return policy</p>
+    </div>
+    <div class="badge-item">
+      <svg class="badge-icon"><use href="#icon-secure"></use></svg>
+      <h4>Secure Payment</h4>
+      <p>SSL encrypted checkout</p>
+    </div>
+    <div class="badge-item">
+      <svg class="badge-icon"><use href="#icon-support"></use></svg>
+      <h4>24/7 Support</h4>
+      <p>Contact us anytime</p>
+    </div>
+  </section>
+</main>
+
+{%- comment -%} ========== SECTION 19: Footer ========== {%- endcomment -%}
+<footer class="site-footer">
+  <div class="footer-grid">
+    <div class="footer-col">
+      <h4>Shop</h4>
+      <ul>
+        <li><a href="/collections">All Collections</a></li>
+        <li><a href="/products">All Products ({{ product_count }})</a></li>
+        <li><a href="/new">New Arrivals</a></li>
+        <li><a href="/sale">Sale Items</a></li>
+        <li><a href="/bestsellers">Best Sellers</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Customer Service</h4>
+      <ul>
+        <li><a href="/contact">Contact Us</a></li>
+        <li><a href="/faq">FAQ</a></li>
+        <li><a href="/shipping">Shipping Info</a></li>
+        <li><a href="/returns">Returns & Exchanges</a></li>
+        <li><a href="/sizing">Size Guide</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>About</h4>
+      <ul>
+        <li><a href="/about">Our Story</a></li>
+        <li><a href="/blog">Blog</a></li>
+        <li><a href="/press">Press</a></li>
+        <li><a href="/careers">Careers</a></li>
+        <li><a href="/sustainability">Sustainability</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Connect</h4>
+      <ul class="social-links">
+        <li><a href="https://facebook.com">Facebook</a></li>
+        <li><a href="https://twitter.com">Twitter</a></li>
+        <li><a href="https://instagram.com">Instagram</a></li>
+        <li><a href="https://pinterest.com">Pinterest</a></li>
+        <li><a href="https://youtube.com">YouTube</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <div class="footer-legal">
+      <a href="/privacy">Privacy Policy</a>
+      <a href="/terms">Terms of Service</a>
+      <a href="/accessibility">Accessibility</a>
+    </div>
+    <p class="copyright">
+      &copy; 2024 E-Commerce Store. All rights reserved.
+      {{ product_count }} products | {{ total_variants }} variants | {{ total_images }} images
+    </p>
+  </div>
+</footer>
+
+{%- comment -%} ========== SECTION 20: Hidden Data for JS ========== {%- endcomment -%}
+<script type="application/json" id="product-data">
+{
+  "products": [
+    {% for product in all_products %}
+    {% assign available_product_variants = product.variants | where: "available", true %}
+    {% assign available_product_variants_count = available_product_variants | size %}
+    {
+      "id": {{ product.id }},
+      "title": {{ product.title | json }},
+      "price": {{ product.price }},
+      "available": {% if available_product_variants_count > 0 %}true{% else %}false{% endif %},
+      "variants": {{ product.variants | size }},
+      "images": {{ product.images | size }}
+    }{% unless forloop.last %},{% endunless %}
+    {% endfor %}
+  ],
+  "stats": {
+    "total": {{ product_count }},
+    "avgPrice": {{ avg_price | round: 2 }},
+    "totalVariants": {{ total_variants }},
+    "availableVariants": {{ available_variants }}
+  }
+}
+</script>
+
+</body>
+</html>

@@ -1,9 +1,0 @@
-{%- comment -%}
-Composite test: for loop with render
-Partial rendering (scope isolated) inside loop
-Requires: partials/product_card.liquid
-Support: shopify >=3.0, keepsuit >=1.0
-{%- endcomment -%}
-{% for product in products %}
-  {% render 'product_card', product: product %}
-{% endfor %}

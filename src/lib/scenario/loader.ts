@@ -17,10 +17,10 @@ const DEFAULT_SCENARIOS_DIR = join(__dirname, "../../../scenarios");
  * Valid scenario categories (hierarchical path format).
  * - unit/tags: Individual tag tests (for, if, include, etc.)
  * - unit/filters: Individual filter tests (map, where, sort, etc.)
- * - composite: Combined feature tests
+ * - representative: Scalability tests (simple to super-large)
  * - partials: Shared partials for include/render
  */
-const SCENARIO_CATEGORIES = ["unit/tags", "unit/filters", "composite", "partials"] as const;
+const SCENARIO_CATEGORIES = ["unit/tags", "unit/filters", "representative", "partials"] as const;
 
 /**
  * Scenario categories available in the scenarios directory.
@@ -76,8 +76,8 @@ export class ScenarioLoader {
   }
 
   /**
-   * Load a scenario by path (e.g., "unit/tags/for", "composite/for-with-if").
-   * Supports both 2-level (composite/x) and 3-level (unit/tags/x) paths.
+   * Load a scenario by path (e.g., "unit/tags/for", "representative/simple").
+   * Supports both 2-level (representative/x) and 3-level (unit/tags/x) paths.
    */
   async loadByPath(scenarioPath: string): Promise<string> {
     const { category, name } = this.parsePath(scenarioPath);
@@ -93,7 +93,7 @@ export class ScenarioLoader {
 
   /**
    * Parse a scenario path into category and name.
-   * Handles hierarchical categories like "unit/tags" and flat ones like "composite".
+   * Handles hierarchical categories like "unit/tags" and flat ones like "representative".
    */
   private parsePath(scenarioPath: string): { category: string; name: string } {
     const parts = scenarioPath.split("/");
@@ -103,7 +103,7 @@ export class ScenarioLoader {
       return { category: `${parts[0]}/${parts[1]}`, name: parts[2] };
     }
 
-    // 2-level: composite/for-with-if → category=composite, name=for-with-if
+    // 2-level: representative/simple → category=representative, name=simple
     if (parts.length === 2) {
       return { category: parts[0], name: parts[1] };
     }
@@ -143,7 +143,7 @@ export class ScenarioLoader {
 
   /**
    * List all available categories.
-   * Returns hierarchical categories (e.g., "unit/tags", "unit/filters", "composite").
+   * Returns hierarchical categories (e.g., "unit/tags", "unit/filters", "representative").
    * This operation is synchronous as it only reads directory entries.
    */
   listCategories(): ScenarioCategory[] {

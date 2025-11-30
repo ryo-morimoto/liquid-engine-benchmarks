@@ -1,0 +1,18 @@
+{%- comment -%}
+Representative test: Deep nested loops with conditionals
+Measures performance of nested iterations and conditional branching.
+Complexity: O(n * m) where n = products, m = variants per product
+{%- endcomment -%}
+{% for product in products %}
+  {% for variant in product.variants %}
+    {% if variant.available %}
+      {% if variant.price > 50 %}
+{{ product.title }} - {{ variant.title }}: Premium
+      {% else %}
+{{ product.title }} - {{ variant.title }}: Standard
+      {% endif %}
+    {% else %}
+{{ product.title }} - {{ variant.title }}: Out of stock
+    {% endif %}
+  {% endfor %}
+{% endfor %}

@@ -1,9 +1,0 @@
-{%- comment -%}
-Unit test: nested for loops
-Measures performance of loop nesting (products x variants)
-{%- endcomment -%}
-{% for product in products %}
-  {% for variant in product.variants %}
-{{ product.title }} - {{ variant.title }}: {{ variant.price }}
-  {% endfor %}
-{% endfor %}

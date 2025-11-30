@@ -16,9 +16,7 @@
       "version": "0.9.0",
       "excludeScenarios": [
         "unit/tags/extends",
-        "unit/tags/include",
-        "unit/tags/include-with-vars",
-        "composite/for-with-include"
+        "unit/tags/include"
       ]
     },
     {
@@ -29,8 +27,7 @@
       "excludeScenarios": [
         "unit/tags/render",
         "unit/tags/echo",
-        "unit/tags/liquid",
-        "composite/for-with-render"
+        "unit/tags/liquid"
       ]
     },
     {

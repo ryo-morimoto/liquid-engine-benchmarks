@@ -1,0 +1,8 @@
+{%- comment -%}
+Representative test: Easy loop
+Measures basic iteration performance with simple output.
+Complexity: O(n) where n = number of products
+{%- endcomment -%}
+{% for product in products %}
+{{ product.title }}: {{ product.price }}
+{% endfor %}

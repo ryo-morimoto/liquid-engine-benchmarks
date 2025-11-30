@@ -1,9 +1,0 @@
-{%- comment -%}
-Composite test: for loop with assign
-Variable assignment inside loop
-{%- endcomment -%}
-{% for product in products %}
-  {% assign discounted = product.price | times: 0.9 %}
-  {% assign label = product.title | upcase %}
-{{ label }}: {{ discounted }}
-{% endfor %}

@@ -1,8 +1,0 @@
-{%- comment -%}
-Unit test: include tag with variable passing
-Measures partial inclusion with parameter overhead
-Requires: partials/product_card.liquid
-Support: kalimatas only (keepsuit doesn't support include tag)
-{%- endcomment -%}
-{% assign product = products | first %}
-{% include 'product_card', product: product, show_price: true %}
