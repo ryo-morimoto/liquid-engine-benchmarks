@@ -47,6 +47,14 @@ import {
 type OutputFormat = "json" | "table";
 
 /**
+ * Verification mode for snapshot comparison.
+ * - self: Compare against adapter's own snapshot (default)
+ * - baseline: Compare against baseline adapter's snapshot (shopify)
+ * - off: Skip verification
+ */
+type VerifyMode = "self" | "baseline" | "off";
+
+/**
  * CLI options for single benchmark mode.
  * adapter and scenario are positional args, rest are optional flags.
  */
@@ -60,7 +68,7 @@ interface SingleBenchOptions {
   output?: string;
   format: OutputFormat;
   quiet: boolean;
-  noVerify: boolean;
+  verifyMode: VerifyMode;
   updateSnapshots: boolean;
 }
 
@@ -76,7 +84,7 @@ interface AllBenchOptions {
   format: OutputFormat;
   quiet: boolean;
   category?: string;
-  noVerify: boolean;
+  verifyMode: VerifyMode;
   updateSnapshots: boolean;
 }
 
@@ -101,6 +109,15 @@ function isOutputFormat(s: string): s is OutputFormat {
 }
 
 /**
+ * Valid verification modes.
+ */
+const VERIFY_MODES = ["self", "baseline", "off"] as const;
+
+function isVerifyMode(s: string): s is VerifyMode {
+  return VERIFY_MODES.includes(s as VerifyMode);
+}
+
+/**
  * Parse flags common to both modes.
  * Returns parsed options and any positional arguments.
  */
@@ -113,7 +130,7 @@ function parseCommonFlags(args: string[]): {
   format?: OutputFormat;
   quiet: boolean;
   category?: string;
-  noVerify: boolean;
+  verifyMode: VerifyMode;
   updateSnapshots: boolean;
 } {
   // Separate positional arguments from flags
@@ -130,7 +147,7 @@ function parseCommonFlags(args: string[]): {
       process.exit(0);
     } else if (arg.startsWith("-")) {
       allFlags.push(arg);
-      // Flags that expect a value (not including boolean flags like -q/--quiet, --no-verify, -u/--update-snapshots)
+      // Flags that expect a value (not including boolean flags like -q/--quiet, -u/--update-snapshots)
       if (
         arg === "-s" ||
         arg === "-i" ||
@@ -138,12 +155,14 @@ function parseCommonFlags(args: string[]): {
         arg === "-o" ||
         arg === "-f" ||
         arg === "-c" ||
+        arg === "-v" ||
         arg === "--scale" ||
         arg === "--iterations" ||
         arg === "--warmup" ||
         arg === "--output" ||
         arg === "--format" ||
-        arg === "--category"
+        arg === "--category" ||
+        arg === "--verify"
       ) {
         expectingValue = true;
       }
@@ -163,7 +182,7 @@ function parseCommonFlags(args: string[]): {
       format: { type: "string", short: "f" },
       quiet: { type: "boolean", short: "q" },
       category: { type: "string", short: "c" },
-      "no-verify": { type: "boolean" },
+      verify: { type: "string", short: "v" },
       "update-snapshots": { type: "boolean", short: "u" },
     },
     strict: true,
@@ -189,6 +208,17 @@ function parseCommonFlags(args: string[]): {
     format = values.format;
   }
 
+  // Validate verify mode
+  let verifyMode: VerifyMode = "self"; // default
+  if (values.verify) {
+    if (!isVerifyMode(values.verify)) {
+      console.error(`Error: Invalid verify mode "${values.verify}"`);
+      console.error(`Valid modes: ${VERIFY_MODES.join(", ")}`);
+      process.exit(1);
+    }
+    verifyMode = values.verify;
+  }
+
   // Parse numeric options
   const iterations = values.iterations ? parseInt(values.iterations, 10) : DEFAULTS.iterations;
   const warmup = values.warmup ? parseInt(values.warmup, 10) : DEFAULTS.warmup;
@@ -212,7 +242,7 @@ function parseCommonFlags(args: string[]): {
     format,
     quiet: values.quiet ?? false,
     category: values.category,
-    noVerify: values["no-verify"] ?? false,
+    verifyMode,
     updateSnapshots: values["update-snapshots"] ?? false,
   };
 }
@@ -232,7 +262,7 @@ export function parseArgs_(args: string[]): BenchOptions {
     format,
     quiet,
     category,
-    noVerify,
+    verifyMode,
     updateSnapshots,
   } = parseCommonFlags(args);
 
@@ -247,7 +277,7 @@ export function parseArgs_(args: string[]): BenchOptions {
       format: format ?? "table",
       quiet,
       category,
-      noVerify,
+      verifyMode,
       updateSnapshots,
     };
   }
@@ -280,7 +310,7 @@ export function parseArgs_(args: string[]): BenchOptions {
     output,
     format: format ?? "json",
     quiet,
-    noVerify,
+    verifyMode,
     updateSnapshots,
   };
 }
@@ -311,8 +341,11 @@ Options:
   -h, --help               Show this help
 
 Verification:
-  --no-verify              Skip output verification against baseline snapshots
-  -u, --update-snapshots   Update baseline snapshots with current output
+  -v, --verify <mode>      Verification mode (default: self)
+                             self     - Compare against own snapshot
+                             baseline - Compare against shopify snapshot
+                             off      - Skip verification
+  -u, --update-snapshots   Update snapshots with current output
 
 Output Formats:
   table    Comparison table with baseline ratios (shopify as baseline)
@@ -332,6 +365,10 @@ Examples:
   leb bench keepsuit unit/tags/for
   leb bench shopify representative/simple -s large
   leb bench kalimatas unit/filters/map -i 500 -w 20
+
+  # Cross-verify keepsuit output against shopify baseline
+  leb bench keepsuit unit/tags/for --verify baseline
+  leb bench --verify baseline  # All adapters vs shopify
 
   # Suppress progress output for scripting
   leb bench -q keepsuit unit/tags/for > result.json
@@ -493,12 +530,12 @@ interface BenchResult {
  * Verification options for benchmark execution.
  */
 interface VerifyOptions {
-  /** Skip verification against snapshots */
-  noVerify: boolean;
+  /** Verification mode: self, baseline, or off */
+  mode: VerifyMode;
   /** Update snapshots with current output */
   updateSnapshots: boolean;
-  /** Compare against this adapter's snapshot instead of self (optional) */
-  compareAgainst?: AdapterName;
+  /** Baseline adapter name (used when mode is "baseline") */
+  baselineAdapter: AdapterName;
 }
 
 /**
@@ -557,18 +594,26 @@ async function runSingleBenchmark(
     // (same scenario with different scale may produce different output)
     const snapshotKey = `${scenario}/${scale}`;
 
-    if (verifyOptions && !verifyOptions.noVerify && benchResult.rendered_output !== undefined) {
+    if (
+      verifyOptions &&
+      verifyOptions.mode !== "off" &&
+      benchResult.rendered_output !== undefined
+    ) {
       if (verifyOptions.updateSnapshots) {
         // Update mode: save snapshot for this adapter
         await updateSnapshot(snapshotKey, adapter, benchResult.rendered_output);
       } else {
-        // Verification mode: compare against own snapshot (self-verification)
-        // or against specified adapter's snapshot (baseline comparison)
+        // Determine comparison target based on verify mode
+        // - self: compare against own snapshot (undefined = self)
+        // - baseline: compare against baseline adapter's snapshot
+        const compareAgainst =
+          verifyOptions.mode === "baseline" ? verifyOptions.baselineAdapter : undefined;
+
         benchResult.verification = await verifySnapshot(
           snapshotKey,
           adapter,
           benchResult.rendered_output,
-          verifyOptions.compareAgainst
+          compareAgainst
         );
       }
     }
@@ -588,7 +633,7 @@ async function runSingleBenchmark(
 /**
  * Run all benchmarks (all adapters × all scenarios).
  * Outputs comparison table (default) or JSON based on --format option.
- * Performs self-verification against each adapter's own snapshots unless --no-verify is specified.
+ * Verification mode is controlled by --verify option.
  */
 async function runAll(options: AllBenchOptions): Promise<void> {
   // Load config for scenario exclusions and baseline
@@ -607,15 +652,23 @@ async function runAll(options: AllBenchOptions): Promise<void> {
   // Adapter order: baseline first for table display purposes
   const adapters = [baseline, ...ADAPTER_NAMES.filter((a) => a !== baseline)] as const;
 
-  // Verification options (self-verification by default)
+  // Verification options
   const verifyOptions: VerifyOptions = {
-    noVerify: options.noVerify,
+    mode: options.verifyMode,
     updateSnapshots: options.updateSnapshots,
-    // No compareAgainst = self-verification mode
+    baselineAdapter: baseline,
   };
 
   // Helper for conditional progress output
   const log = options.quiet ? () => {} : (msg: string) => console.error(msg);
+
+  // Determine verify mode description for logging
+  const verifyModeDesc =
+    options.verifyMode === "self"
+      ? "self (each adapter vs own snapshot)"
+      : options.verifyMode === "baseline"
+        ? `baseline (all adapters vs ${baseline})`
+        : "off";
 
   log(`bench: running all benchmarks`);
   log(`  adapters: ${adapters.join(", ")}`);
@@ -627,10 +680,8 @@ async function runAll(options: AllBenchOptions): Promise<void> {
   log(`  format: ${options.format}`);
   if (options.updateSnapshots) {
     log(`  mode: updating snapshots`);
-  } else if (options.noVerify) {
-    log(`  mode: no verification`);
   } else {
-    log(`  mode: self-verification (each adapter vs own snapshot)`);
+    log(`  verify: ${verifyModeDesc}`);
   }
   log("");
 
@@ -709,8 +760,8 @@ async function runAll(options: AllBenchOptions): Promise<void> {
   log("");
   log(`bench: completed ${completed}/${totalBenchmarks}, failed ${failed}, skipped ${skipped}`);
 
-  // Verification summary (only when not using --no-verify)
-  if (!options.noVerify && !options.updateSnapshots) {
+  // Verification summary (only when verify mode is not "off")
+  if (options.verifyMode !== "off" && !options.updateSnapshots) {
     const totalVerified = verifyPassed + verifyFailed + verifyMissing;
     if (totalVerified > 0) {
       log(`verify: ${verifyPassed} passed, ${verifyFailed} failed, ${verifyMissing} missing`);
@@ -733,9 +784,10 @@ async function runAll(options: AllBenchOptions): Promise<void> {
         failed,
         skipped,
         // Include verification info in metadata
-        ...(!options.noVerify &&
+        ...(options.verifyMode !== "off" &&
           !options.updateSnapshots && {
             verification: {
+              mode: options.verifyMode,
               passed: verifyPassed,
               failed: verifyFailed,
               missing: verifyMissing,
@@ -771,7 +823,7 @@ async function runAll(options: AllBenchOptions): Promise<void> {
 /**
  * Run a single benchmark (single mode).
  * Outputs JSON (default) or table format.
- * Performs output verification unless --no-verify is specified.
+ * Verification mode is controlled by --verify option.
  */
 async function runSingle(options: SingleBenchOptions): Promise<void> {
   const isJson = options.format === "json";
@@ -797,11 +849,15 @@ async function runSingle(options: SingleBenchOptions): Promise<void> {
     process.exit(1);
   }
 
-  // Verification options (self-verification by default)
+  // Load config for baseline adapter
+  const config = await loadConfig();
+  const baseline = config.baseline.library as AdapterName;
+
+  // Verification options
   const verifyOptions: VerifyOptions = {
-    noVerify: options.noVerify,
+    mode: options.verifyMode,
     updateSnapshots: options.updateSnapshots,
-    // No compareAgainst = self-verification mode
+    baselineAdapter: baseline,
   };
 
   // Progress output to stderr
@@ -809,8 +865,11 @@ async function runSingle(options: SingleBenchOptions): Promise<void> {
   log(`  scale=${options.scale} iterations=${options.iterations} warmup=${options.warmup}`);
   if (options.updateSnapshots) {
     log(`  mode: updating snapshots`);
-  } else if (options.noVerify) {
-    log(`  mode: no verification`);
+  } else if (options.verifyMode === "off") {
+    log(`  verify: off`);
+  } else {
+    const verifyTarget = options.verifyMode === "baseline" ? baseline : "self";
+    log(`  verify: ${options.verifyMode} (vs ${verifyTarget})`);
   }
 
   const startTime = Date.now();

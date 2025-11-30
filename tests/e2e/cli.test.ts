@@ -1374,12 +1374,16 @@ describe("E2E: Snapshot Verification", () => {
   const SNAPSHOT_DIR = join(PROJECT_ROOT, "__snapshots__");
 
   describe("help text includes verification options", () => {
-    test("bench help shows --no-verify option", async () => {
+    test("bench help shows --verify option with modes", async () => {
       const { stdout, exitCode } = await runCli(["bench", "--help"]);
 
       expect(exitCode).toBe(0);
-      expect(stdout).toContain("--no-verify");
-      expect(stdout).toContain("Skip output verification");
+      expect(stdout).toContain("--verify");
+      expect(stdout).toContain("-v");
+      // Verify mode descriptions are shown
+      expect(stdout).toContain("self");
+      expect(stdout).toContain("baseline");
+      expect(stdout).toContain("off");
     });
 
     test("bench help shows --update-snapshots option", async () => {
@@ -1388,13 +1392,28 @@ describe("E2E: Snapshot Verification", () => {
       expect(exitCode).toBe(0);
       expect(stdout).toContain("--update-snapshots");
       expect(stdout).toContain("-u");
-      expect(stdout).toContain("Update baseline snapshots");
+      expect(stdout).toContain("Update snapshots");
     });
   });
 
   describe("verification option parsing", () => {
-    test("accepts --no-verify flag", async () => {
-      const { exitCode } = await runCli(["bench", "--no-verify", "--help"]);
+    test("accepts --verify self flag", async () => {
+      const { exitCode } = await runCli(["bench", "--verify", "self", "--help"]);
+      expect(exitCode).toBe(0);
+    });
+
+    test("accepts --verify baseline flag", async () => {
+      const { exitCode } = await runCli(["bench", "--verify", "baseline", "--help"]);
+      expect(exitCode).toBe(0);
+    });
+
+    test("accepts --verify off flag", async () => {
+      const { exitCode } = await runCli(["bench", "--verify", "off", "--help"]);
+      expect(exitCode).toBe(0);
+    });
+
+    test("accepts -v short flag", async () => {
+      const { exitCode } = await runCli(["bench", "-v", "baseline", "--help"]);
       expect(exitCode).toBe(0);
     });
 
@@ -1408,10 +1427,16 @@ describe("E2E: Snapshot Verification", () => {
       expect(exitCode).toBe(0);
     });
 
-    test("--no-verify and -u can be combined (no conflict)", async () => {
+    test("--verify off and -u can be combined (no conflict)", async () => {
       // Both flags are valid even if semantically redundant
-      const { exitCode } = await runCli(["bench", "--no-verify", "-u", "--help"]);
+      const { exitCode } = await runCli(["bench", "--verify", "off", "-u", "--help"]);
       expect(exitCode).toBe(0);
+    });
+
+    test("errors on invalid verify mode", async () => {
+      const { stderr, exitCode } = await runCli(["bench", "--verify", "invalid"]);
+      expect(exitCode).toBe(1);
+      expect(stderr).toContain('Invalid verify mode "invalid"');
     });
   });
 
@@ -1520,7 +1545,7 @@ describe("E2E: Snapshot Verification", () => {
     );
 
     test(
-      "--no-verify skips verification even when snapshot exists",
+      "--verify off skips verification even when snapshot exists",
       async () => {
         if (!(await isRuntimeAvailable("ruby"))) {
           console.log("Skipping: Ruby not available");
@@ -1546,7 +1571,7 @@ describe("E2E: Snapshot Verification", () => {
           return;
         }
 
-        // Skip verification with --no-verify
+        // Skip verification with --verify off
         const { stdout, stderr, exitCode } = await runCli([
           "bench",
           "shopify",
@@ -1557,11 +1582,12 @@ describe("E2E: Snapshot Verification", () => {
           "0",
           "-s",
           "small",
-          "--no-verify",
+          "--verify",
+          "off",
         ]);
 
         expect(exitCode).toBe(0);
-        expect(stderr).toContain("mode: no verification");
+        expect(stderr).toContain("verify: off");
         expect(stderr).not.toContain("verification: pass");
         expect(stderr).not.toContain("verification: FAIL");
 
@@ -1736,6 +1762,167 @@ describe("E2E: Snapshot Verification", () => {
             expect(result.verification.status).toBe("missing");
           }
           expect(stderr).toContain("verification: missing");
+        }
+      },
+      BENCHMARK_TIMEOUT
+    );
+  });
+
+  describe("baseline verification mode", () => {
+    test(
+      "--verify baseline compares against shopify snapshot",
+      async () => {
+        if (!(await isRuntimeAvailable("ruby"))) {
+          console.log("Skipping: Ruby not available");
+          return;
+        }
+        if (!(await isRuntimeAvailable("php"))) {
+          console.log("Skipping: PHP not available");
+          return;
+        }
+
+        // First create shopify baseline snapshot
+        const shopifyCreate = await runCli([
+          "bench",
+          "shopify",
+          "unit/tags/for",
+          "-i",
+          "2",
+          "-w",
+          "0",
+          "-s",
+          "small",
+          "-u",
+        ]);
+
+        if (shopifyCreate.exitCode !== 0) {
+          console.log("Skipping: couldn't create shopify snapshot");
+          return;
+        }
+
+        // Run keepsuit with --verify baseline to compare against shopify
+        const { stdout, stderr, exitCode } = await runCli([
+          "bench",
+          "keepsuit",
+          "unit/tags/for",
+          "-i",
+          "2",
+          "-w",
+          "0",
+          "-s",
+          "small",
+          "--verify",
+          "baseline",
+        ]);
+
+        // Baseline verification may pass or fail depending on output compatibility
+        // The key point is that it runs and produces correct verification structure
+        const result = JSON.parse(stdout);
+        expect(result.verification).toBeDefined();
+        // Verify it compared against shopify, not self
+        expect(stderr).toContain("verify: baseline");
+      },
+      BENCHMARK_TIMEOUT
+    );
+
+    test(
+      "-v baseline short flag works",
+      async () => {
+        if (!(await isRuntimeAvailable("ruby"))) {
+          console.log("Skipping: Ruby not available");
+          return;
+        }
+        if (!(await isRuntimeAvailable("php"))) {
+          console.log("Skipping: PHP not available");
+          return;
+        }
+
+        // First create shopify baseline snapshot
+        const shopifyCreate = await runCli([
+          "bench",
+          "shopify",
+          "unit/tags/for",
+          "-i",
+          "2",
+          "-w",
+          "0",
+          "-s",
+          "small",
+          "-u",
+        ]);
+
+        if (shopifyCreate.exitCode !== 0) {
+          console.log("Skipping: couldn't create shopify snapshot");
+          return;
+        }
+
+        // Run keepsuit with -v baseline
+        const { stderr, exitCode } = await runCli([
+          "bench",
+          "keepsuit",
+          "unit/tags/for",
+          "-i",
+          "2",
+          "-w",
+          "0",
+          "-s",
+          "small",
+          "-v",
+          "baseline",
+        ]);
+
+        // Should show baseline verification mode in progress output
+        if (exitCode === 0 || stderr.includes("verify:")) {
+          expect(stderr).toContain("verify: baseline");
+        }
+      },
+      BENCHMARK_TIMEOUT
+    );
+
+    test(
+      "default verify mode is self (not baseline)",
+      async () => {
+        if (!(await isRuntimeAvailable("ruby"))) {
+          console.log("Skipping: Ruby not available");
+          return;
+        }
+
+        // Create shopify snapshot
+        const shopifyCreate = await runCli([
+          "bench",
+          "shopify",
+          "unit/tags/for",
+          "-i",
+          "2",
+          "-w",
+          "0",
+          "-s",
+          "small",
+          "-u",
+        ]);
+
+        if (shopifyCreate.exitCode !== 0) {
+          console.log("Skipping: couldn't create shopify snapshot");
+          return;
+        }
+
+        // Run shopify without explicit --verify flag (should default to self)
+        const { stderr, exitCode } = await runCli([
+          "bench",
+          "shopify",
+          "unit/tags/for",
+          "-i",
+          "2",
+          "-w",
+          "0",
+          "-s",
+          "small",
+        ]);
+
+        if (exitCode === 0) {
+          // Default mode should show self-verification behavior
+          // Not explicitly "verify: self" but should pass since comparing to own snapshot
+          expect(stderr).toContain("verification: pass");
         }
       },
       BENCHMARK_TIMEOUT

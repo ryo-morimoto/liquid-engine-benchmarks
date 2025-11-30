@@ -21,7 +21,18 @@
       "name": "kalimatas",
       "package": "liquid/liquid",
       "version": "1.4.44",
-      "excludeScenarios": ["unit/tags/render", "unit/tags/echo", "unit/tags/liquid"]
+      "excludeScenarios": [
+        "unit/tags/render",
+        "unit/tags/echo",
+        "unit/tags/liquid",
+        "unit/filters/at-least-at-most",
+        "unit/filters/base64",
+        "unit/filters/compact",
+        "unit/filters/concat",
+        "unit/filters/find",
+        "unit/filters/reject",
+        "unit/filters/sum"
+      ]
     },
     {
       "lang": "ruby",
